@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order #{{ order_number }} Invoice - djCommerce{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shop:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Order #{{ order_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="card border rounded-4 shadow-sm p-4 p-md-5 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center pb-4 mb-4 border-bottom gap-2">
+            <div>
+                <span class="badge bg-primary fs-6 px-3 py-1.5 rounded-pill mb-2">Order #{{ order_number }}</span>
+                <h2 class="h4 fw-bold mb-0">Official Purchase Invoice</h2>
+                <span class="text-muted small">Placed on {{ order_date|date:"F d, Y - h:i A" }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge {% if status == 'Paid' or status == 'Delivered' %}bg-success{% elif status == 'Cancelled' %}bg-danger{% else %}bg-warning text-dark{% endif %} fs-6 px-3 py-2 rounded-pill">
+                    {{ status }}
+                </span>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="window.print();">
+                    <i class="bi bi-printer me-1"></i> Print
+                </button>
+            </div>
+        </div>
+
+        <!-- Customer & Shipping Summary -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <h6 class="text-uppercase text-muted fw-bold small">Customer Information</h6>
+                <p class="fw-bold text-dark mb-1">{{ customer.name }}</p>
+                <p class="text-muted small mb-1"><i class="bi bi-telephone me-1"></i> {{ customer.phone }}</p>
+                {% if customer.email %}
+                    <p class="text-muted small mb-0"><i class="bi bi-envelope me-1"></i> {{ customer.email }}</p>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-uppercase text-muted fw-bold small">Delivery & Payment</h6>
+                <p class="text-dark small mb-1" style="white-space: pre-line;">{{ customer.address }}</p>
+                <span class="badge bg-light text-dark border"><i class="bi bi-credit-card me-1"></i> {{ payment_method }}</span>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <h6 class="text-uppercase text-muted fw-bold small mb-3">Ordered Items</h6>
+        <div class="table-responsive mb-4">
+            <table class="table align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product Details</th>
+                        <th class="text-center">Price</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                {% if order.product.image %}
+                                    <img src="{{ order.product.image.url }}" alt="{{ order.product.name }}" class="rounded bg-light p-1" style="width: 48px; height: 48px; object-fit: contain;">
+                                {% endif %}
+                                <div>
+                                    <span class="fw-bold text-dark d-block">{{ order.product.name }}</span>
+                                    {% if order.variant %}
+                                        <span class="badge bg-secondary-subtle text-secondary small py-0">{{ order.variant.name }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center fw-semibold text-dark">&#2547; {{ order.product.price|floatformat:"0" }}</td>
+                        <td class="text-center fw-bold">{{ order.quantity }}</td>
+                        <td class="text-end fw-bold text-dark">&#2547; {{ order.total_price|floatformat:"0" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3" class="text-end border-0 text-muted">Shipping:</th>
+                        <th class="text-end border-0 text-success fw-bold">FREE</th>
+                    </tr>
+                    <tr>
+                        <th colspan="3" class="text-end border-0 fs-5 text-dark">Grand Total:</th>
+                        <th class="text-end border-0 fs-5 text-primary fw-bold">&#2547; {{ total_amount|floatformat:"0" }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{% url 'shop:dashboard' %}#orders" class="btn btn-outline-secondary rounded-pill btn-sm px-4">
+                <i class="bi bi-arrow-left me-1"></i> Back to Orders
+            </a>
+            <a href="{% url 'shop:product_list' %}" class="btn btn-primary rounded-pill btn-sm px-4">
+                Shop More Phones
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

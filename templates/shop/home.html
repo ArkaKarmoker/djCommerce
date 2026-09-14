@@ -1,0 +1,546 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}djCommerce - Smartphones, Flagships & Gadgets | Trusted Mobile Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- ── 1. Hero Showcase Section ─────────────────────────────────── -->
+    <section class="dj-hero-section">
+        <div class="row g-3">
+            
+            <!-- Main Hero Banner (Col 8) -->
+            <div class="col-lg-8">
+                <div class="dj-hero-banner-wrap h-100">
+                    <a href="{% url 'shop:product_list' %}?brand=Apple" class="d-block w-100 h-100" title="The New iPhone Era - Pre-order Now">
+                        <img src="{% static 'images/iphone_era_banner.png' %}" alt="The New iPhone Era - Pre-order Now" class="dj-hero-banner-img w-100 h-100">
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stacked Side Promo Banners (Col 4) -->
+            <div class="col-lg-4 d-flex flex-column gap-3">
+                
+                <!-- Side Promo 1: Galaxy S26 Ultra Banner -->
+                <div class="dj-promo-banner-card flex-grow-1">
+                    <a href="{% url 'shop:product_list' %}?brand=Samsung" class="d-block w-100 h-100" title="Galaxy S26 Ultra - Where Power Goes Ultra">
+                        <img src="{% static 'images/galaxy_s26_ultra_banner.png' %}" alt="Galaxy S26 Ultra - Where Power Goes Ultra" class="dj-promo-banner-img w-100 h-100">
+                    </a>
+                </div>
+
+                <!-- Side Promo 2: AirPods Pro Banner -->
+                <div class="dj-promo-banner-card flex-grow-1">
+                    <a href="{% url 'shop:product_list' %}?q=AirPods" class="d-block w-100 h-100" title="AirPods Pro (2nd generation) USB-C">
+                        <img src="{% static 'images/airpods_pro_banner.png' %}" alt="AirPods Pro - Pro Sound Only @ 20,999 TK" class="dj-promo-banner-img w-100 h-100">
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 2. 5-Point Trust / Highlight Strip ───────────────────────── -->
+    <div class="dj-trust-strip">
+        <div class="row g-3">
+            <div class="col-lg col-md-4 col-6">
+                <div class="dj-trust-item">
+                    <div class="dj-trust-icon blue">
+                        <i class="bi bi-calculator"></i>
+                    </div>
+                    <div class="dj-trust-text">
+                        <h6>36 Months EMI</h6>
+                        <p>0% Interest Available</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg col-md-4 col-6">
+                <div class="dj-trust-item">
+                    <div class="dj-trust-icon blue">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <div class="dj-trust-text">
+                        <h6>Fastest Delivery</h6>
+                        <p>Same Day in Dhaka</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg col-md-4 col-6">
+                <div class="dj-trust-item">
+                    <div class="dj-trust-icon green">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="dj-trust-text">
+                        <h6>Official Warranty</h6>
+                        <p>100% Genuine Brand Devices</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg col-md-4 col-6">
+                <div class="dj-trust-item">
+                    <div class="dj-trust-icon rose">
+                        <i class="bi bi-tag-fill"></i>
+                    </div>
+                    <div class="dj-trust-text">
+                        <h6>Best Price Deals</h6>
+                        <p>Guaranteed Lowest BDT</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg col-md-4 col-12">
+                <div class="dj-trust-item">
+                    <div class="dj-trust-icon blue">
+                        <i class="bi bi-headset"></i>
+                    </div>
+                    <div class="dj-trust-text">
+                        <h6>After-Sales Support</h6>
+                        <p>1 Year Official Warranty</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── 3. Featured Categories Quick Bar ──────────────────────────── -->
+    <section class="my-4" id="featured-categories">
+        <div class="dj-section-header">
+            <h3 class="dj-section-title">Featured <span class="highlight">Categories</span></h3>
+            <a href="{% url 'shop:product_list' %}" class="dj-view-all-link">
+                View All <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-6 g-3">
+            <div class="col">
+                <a href="{% url 'shop:product_list' %}?brand=Apple" class="dj-cat-bubble">
+                    <div class="dj-cat-bubble-icon">
+                        <i class="bi bi-apple"></i>
+                    </div>
+                    <div class="dj-cat-bubble-title">iPhones</div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="{% url 'shop:product_list' %}?brand=Samsung" class="dj-cat-bubble">
+                    <div class="dj-cat-bubble-icon">
+                        <i class="bi bi-phone"></i>
+                    </div>
+                    <div class="dj-cat-bubble-title">Samsung</div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="{% url 'shop:product_list' %}?brand=Google" class="dj-cat-bubble">
+                    <div class="dj-cat-bubble-icon">
+                        <i class="bi bi-google"></i>
+                    </div>
+                    <div class="dj-cat-bubble-title">Google Pixel</div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="{% url 'shop:product_list' %}?brand=Xiaomi" class="dj-cat-bubble">
+                    <div class="dj-cat-bubble-icon">
+                        <i class="bi bi-phone-flip"></i>
+                    </div>
+                    <div class="dj-cat-bubble-title">Xiaomi & Redmi</div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="{% url 'shop:product_list' %}?brand=OnePlus" class="dj-cat-bubble">
+                    <div class="dj-cat-bubble-icon">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                    <div class="dj-cat-bubble-title">OnePlus</div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="{% url 'shop:product_list' %}" class="dj-cat-bubble">
+                    <div class="dj-cat-bubble-icon">
+                        <i class="bi bi-grid"></i>
+                    </div>
+                    <div class="dj-cat-bubble-title">All Phones</div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 4. Featured Products (Flagship & Handpicked) ─────────────── -->
+    <section class="my-5" id="featured-products">
+        <div class="dj-section-header">
+            <div>
+                <h3 class="dj-section-title mb-1">
+                    Featured <span class="highlight">Products</span>
+                </h3>
+                <p class="text-muted small mb-0 d-none d-md-block">Handpicked flagship devices, trending tech & official brand warranty</p>
+            </div>
+            <a href="{% url 'shop:product_list' %}?featured=1" class="dj-view-all-link">
+                View All Featured <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+            {% for product in featured_products %}
+            <div class="col">
+                <div class="dj-card-v2">
+                    <!-- Image Container -->
+                    <div class="dj-card-v2-img">
+                        {% if product.discount_percent > 0 %}
+                            <span class="dj-badge-discount-pct">
+                                {{ product.discount_percent }}% OFF
+                            </span>
+                        {% endif %}
+                        {% if product.badge_info %}
+                            <span class="dj-product-badge {{ product.badge_info.css_class }}">
+                                <i class="{{ product.badge_info.icon }}"></i> {{ product.badge_info.label }}
+                            </span>
+                        {% endif %}
+                        <a href="{% url 'shop:product_detail' product.pk %}">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                            {% else %}
+                                <i class="bi bi-phone fs-1 text-muted"></i>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="dj-card-v2-body">
+                        <!-- Product Brand -->
+                        <span class="dj-product-brand">{{ product.brand|default:'Brand' }}</span>
+
+                        <!-- Product Title -->
+                        <a href="{% url 'shop:product_detail' product.pk %}" class="dj-card-v2-title" title="{{ product.name }}">
+                            {{ product.name }}
+                        </a>
+
+                        <!-- Price Box -->
+                        <div class="dj-price-box">
+                            <span class="dj-offer-price">&#2547; {{ product.price|floatformat:"0" }}</span>
+                            {% if product.regular_price and product.regular_price > product.price %}
+                                <span class="dj-regular-price">&#2547; {{ product.regular_price|floatformat:"0" }}</span>
+                            {% endif %}
+                            {% if product.discount_amount > 0 %}
+                                <span class="dj-discount-pill">&#2547; {{ product.discount_amount|floatformat:"0" }} OFF</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Action Row: Pill Button + Cart Icon -->
+                        <div class="dj-card-v2-actions">
+                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn">
+                                {% if "18" in product.name or "17" in product.name or "S26" in product.name or "Pixel 10" in product.name %}
+                                    Pre Order
+                                {% else %}
+                                    Shop Now
+                                {% endif %}
+                            </a>
+
+                            <form action="{% url 'shop:cart_add' product.pk %}" method="post" class="d-inline m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="dj-icon-btn-cart" title="Add to Cart">
+                                    <i class="bi bi-cart3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-4">
+                <p class="text-muted">No featured products found.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ── 5. New Arrivals (Freshly Added Products) ───────────────────── -->
+    <section class="my-5" id="new-arrivals">
+        <div class="dj-section-header">
+            <div>
+                <h3 class="dj-section-title mb-1">
+                    New <span class="highlight">Arrivals</span>
+                </h3>
+                <p class="text-muted small mb-0 d-none d-md-block">Just landed in stock &bull; Latest release flagships and gadgets</p>
+            </div>
+            <a href="{% url 'shop:product_list' %}?sort=newest" class="dj-view-all-link">
+                View All New <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+            {% for product in new_products %}
+            <div class="col">
+                <div class="dj-card-v2">
+                    <!-- Image Container -->
+                    <div class="dj-card-v2-img">
+                        {% if product.discount_percent > 0 %}
+                            <span class="dj-badge-discount-pct">
+                                {{ product.discount_percent }}% OFF
+                            </span>
+                        {% endif %}
+                        {% if product.badge_info %}
+                            <span class="dj-product-badge {{ product.badge_info.css_class }}">
+                                <i class="{{ product.badge_info.icon }}"></i> {{ product.badge_info.label }}
+                            </span>
+                        {% endif %}
+                        <a href="{% url 'shop:product_detail' product.pk %}">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                            {% else %}
+                                <i class="bi bi-phone fs-1 text-muted"></i>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="dj-card-v2-body">
+                        <!-- Product Brand -->
+                        <span class="dj-product-brand">{{ product.brand|default:'Brand' }}</span>
+
+                        <!-- Product Title -->
+                        <a href="{% url 'shop:product_detail' product.pk %}" class="dj-card-v2-title" title="{{ product.name }}">
+                            {{ product.name }}
+                        </a>
+
+                        <!-- Price Box -->
+                        <div class="dj-price-box">
+                            <span class="dj-offer-price">&#2547; {{ product.price|floatformat:"0" }}</span>
+                            {% if product.regular_price and product.regular_price > product.price %}
+                                <span class="dj-regular-price">&#2547; {{ product.regular_price|floatformat:"0" }}</span>
+                            {% endif %}
+                            {% if product.discount_amount > 0 %}
+                                <span class="dj-discount-pill">&#2547; {{ product.discount_amount|floatformat:"0" }} OFF</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Action Row: Pill Button + Cart Icon -->
+                        <div class="dj-card-v2-actions">
+                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn">
+                                {% if "18" in product.name or "17" in product.name or "S26" in product.name or "Pixel 10" in product.name %}
+                                    Pre Order
+                                {% else %}
+                                    Shop Now
+                                {% endif %}
+                            </a>
+
+                            <form action="{% url 'shop:cart_add' product.pk %}" method="post" class="d-inline m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="dj-icon-btn-cart" title="Add to Cart">
+                                    <i class="bi bi-cart3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-4">
+                <p class="text-muted">No new arrivals found.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+
+
+    <!-- ── 7. Best Offers & Mega Discounts ────────────────────────────── -->
+    <section class="my-5" id="best-offers">
+        <div class="dj-section-header">
+            <div>
+                <h3 class="dj-section-title mb-1">
+                    Best <span class="highlight">Offers & Deals</span>
+                </h3>
+                <p class="text-muted small mb-0 d-none d-md-block">Biggest price cuts, exclusive combo discounts & guaranteed lowest prices</p>
+            </div>
+            <a href="{% url 'shop:product_list' %}?sort=discount" class="dj-view-all-link">
+                View All Deals <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+            {% for product in best_offers %}
+            <div class="col">
+                <div class="dj-card-v2">
+                    <!-- Image Container -->
+                    <div class="dj-card-v2-img">
+                        {% if product.discount_percent > 0 %}
+                            <span class="dj-badge-discount-pct">
+                                {{ product.discount_percent }}% OFF
+                            </span>
+                        {% endif %}
+                        {% if product.badge_info %}
+                            <span class="dj-product-badge {{ product.badge_info.css_class }}">
+                                <i class="{{ product.badge_info.icon }}"></i> {{ product.badge_info.label }}
+                            </span>
+                        {% endif %}
+                        <a href="{% url 'shop:product_detail' product.pk %}">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                            {% else %}
+                                <i class="bi bi-tag fs-1 text-muted"></i>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="dj-card-v2-body">
+                        <!-- Product Brand -->
+                        <span class="dj-product-brand">{{ product.brand|default:'Brand' }}</span>
+
+                        <!-- Product Title -->
+                        <a href="{% url 'shop:product_detail' product.pk %}" class="dj-card-v2-title" title="{{ product.name }}">
+                            {{ product.name }}
+                        </a>
+
+                        <!-- Price Box -->
+                        <div class="dj-price-box">
+                            <span class="dj-offer-price">&#2547; {{ product.price|floatformat:"0" }}</span>
+                            {% if product.regular_price and product.regular_price > product.price %}
+                                <span class="dj-regular-price">&#2547; {{ product.regular_price|floatformat:"0" }}</span>
+                            {% endif %}
+                            {% if product.discount_amount > 0 %}
+                                <span class="dj-discount-pill">&#2547; {{ product.discount_amount|floatformat:"0" }} OFF</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Action Row: Pill Button + Cart Icon -->
+                        <div class="dj-card-v2-actions">
+                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn">
+                                {% if "18" in product.name or "17" in product.name or "S26" in product.name or "Pixel 10" in product.name %}
+                                    Pre Order
+                                {% else %}
+                                    Shop Now
+                                {% endif %}
+                            </a>
+
+                            <form action="{% url 'shop:cart_add' product.pk %}" method="post" class="d-inline m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="dj-icon-btn-cart" title="Add to Cart">
+                                    <i class="bi bi-cart3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-4">
+                <p class="text-muted">No offer products found.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ── 8. Why Buy Smartphones From djCommerce? (Flagship Assurance Showcase) ───────────── -->
+    <section class="dj-why-section my-5">
+        <div class="dj-why-card">
+            <div class="dj-why-header text-center mb-4">
+                <div class="dj-why-badge mb-2">
+                    <i class="bi bi-patch-check-fill text-primary"></i>
+                    <span>THE DJCOMMERCE ASSURANCE</span>
+                </div>
+                <h2 class="dj-why-title">Why Buy Smartphones From <span>djCommerce?</span></h2>
+                <p class="dj-why-subtitle text-muted">
+                    Bangladesh's premier destination for genuine smartphones, flagship mobile devices &amp; official brand warranty.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <!-- Card 1 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="dj-why-feature-box">
+                        <div class="dj-why-icon-wrap blue-gradient">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <h5 class="dj-why-feature-title">100% Authentic Products</h5>
+                        <p class="dj-why-feature-desc">
+                            We source directly from authorized global distribution channels. Every phone is IMEI verified on BTRC, factory sealed, and backed by genuine official brand warranty.
+                        </p>
+                        <div class="dj-why-chips">
+                            <span><i class="bi bi-check2-circle text-primary"></i> IMEI Verified</span>
+                            <span><i class="bi bi-check2-circle text-primary"></i> Factory Sealed</span>
+                            <span><i class="bi bi-check2-circle text-primary"></i> Brand Warranty</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="dj-why-feature-box">
+                        <div class="dj-why-icon-wrap blue-gradient">
+                            <i class="bi bi-credit-card-2-front-fill"></i>
+                        </div>
+                        <h5 class="dj-why-feature-title">36-Month 0% EMI Support</h5>
+                        <p class="dj-why-feature-desc">
+                            Enjoy hassle-free installment facilities with over 30 leading commercial banks in Bangladesh with zero interest and zero hidden processing fees.
+                        </p>
+                        <div class="dj-why-chips">
+                            <span><i class="bi bi-check2-circle text-primary"></i> 30+ Leading Banks</span>
+                            <span><i class="bi bi-check2-circle text-primary"></i> Zero Interest</span>
+                            <span><i class="bi bi-check2-circle text-primary"></i> Instant Processing</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="col-lg-4 col-md-12">
+                    <div class="dj-why-feature-box">
+                        <div class="dj-why-icon-wrap emerald-gradient">
+                            <i class="bi bi-headset"></i>
+                        </div>
+                        <h5 class="dj-why-feature-title">Dedicated VIP Customer Care</h5>
+                        <p class="dj-why-feature-desc">
+                            Enjoy friendly after-sales support, expert technical consultation, same-day delivery in Dhaka, and dedicated nationwide customer service whenever you need help.
+                        </p>
+                        <div class="dj-why-chips">
+                            <span><i class="bi bi-check2-circle text-success"></i> 7 Days Support</span>
+                            <span><i class="bi bi-check2-circle text-success"></i> Same-Day Delivery</span>
+                            <span><i class="bi bi-check2-circle text-success"></i> Official Exchange</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Highlights Strip -->
+            <div class="dj-why-strip mt-4">
+                <div class="row g-3 text-center">
+                    <div class="col-6 col-md-3">
+                        <div class="dj-why-stat">
+                            <strong>50,000+</strong>
+                            <span>Happy Tech Enthusiasts</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="dj-why-stat">
+                            <strong>100%</strong>
+                            <span>Genuine Devices</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="dj-why-stat">
+                            <strong>30+</strong>
+                            <span>EMI Partner Banks</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="dj-why-stat">
+                            <strong>64</strong>
+                            <span>Districts Covered</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

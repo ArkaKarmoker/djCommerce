@@ -1,0 +1,739 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Account - djCommerce{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none"><i class="bi bi-house-door me-1"></i>Home</a></li>
+            <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">My Account</li>
+        </ol>
+    </nav>
+
+    <!-- Main Account Dashboard Grid -->
+    <div class="row g-4">
+        
+        <!-- Left Column: Navigation Sidebar & User Badge -->
+        <div class="col-lg-3 col-md-4">
+            <div class="dj-account-sidebar shadow-sm">
+                
+                <!-- Profile Header Banner -->
+                <div class="dj-sidebar-profile-header">
+                    <div class="dj-avatar-wrapper">
+                        {% if customer.profile_image %}
+                            <img src="{{ customer.profile_image.url }}" alt="{{ customer.get_full_name }}" class="dj-avatar-img" id="sidebarAvatarImg">
+                        {% else %}
+                            <div class="dj-avatar-initials" id="sidebarAvatarInitials">{{ user_initials }}</div>
+                        {% endif %}
+                        <button type="button" class="dj-avatar-cam-badge" data-bs-toggle="modal" data-bs-target="#editProfileModal" title="Change Profile Picture">
+                            <i class="bi bi-camera-fill"></i>
+                        </button>
+                    </div>
+
+                    <h5 class="fw-bold text-dark mb-1">{{ customer.get_full_name|default:user.get_full_name|default:user.username }}</h5>
+                    <div class="mb-2">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small px-2 py-0.5">
+                            <i class="bi bi-patch-check-fill me-1"></i>Verified Member
+                        </span>
+                    </div>
+                    <div class="text-secondary small text-truncate px-2">{{ user.email }}</div>
+                    <div class="text-muted small mt-1">
+                        <i class="bi bi-calendar3 me-1"></i>Since {{ user.date_joined|date:"M Y" }}
+                    </div>
+                </div>
+
+                <!-- Navigation List -->
+                <div class="dj-account-nav-list">
+                    <button type="button" class="dj-account-nav-item active" id="nav-account-details" onclick="switchTab('account-details-pane', this, 'account-details')">
+                        <span class="d-flex align-items-center">
+                            <span class="nav-icon"><i class="bi bi-person-gear"></i></span>
+                            <span>Account Details</span>
+                        </span>
+                        <i class="bi bi-chevron-right small text-muted"></i>
+                    </button>
+
+                    <button type="button" class="dj-account-nav-item" id="nav-orders" onclick="switchTab('orders-pane', this, 'orders')">
+                        <span class="d-flex align-items-center">
+                            <span class="nav-icon"><i class="bi bi-bag-check-fill"></i></span>
+                            <span>My Orders</span>
+                        </span>
+                        {% if total_orders %}
+                            <span class="badge bg-primary text-white rounded-pill px-2">{{ total_orders }}</span>
+                        {% else %}
+                            <i class="bi bi-chevron-right small text-muted"></i>
+                        {% endif %}
+                    </button>
+
+                    <button type="button" class="dj-account-nav-item" id="nav-addresses" onclick="switchTab('addresses-pane', this, 'addresses')">
+                        <span class="d-flex align-items-center">
+                            <span class="nav-icon"><i class="bi bi-geo-alt-fill"></i></span>
+                            <span>Addresses</span>
+                        </span>
+                        {% if saved_addresses %}
+                            <span class="badge bg-light text-dark border rounded-pill px-2">{{ saved_addresses.count }}</span>
+                        {% else %}
+                            <i class="bi bi-chevron-right small text-muted"></i>
+                        {% endif %}
+                    </button>
+
+                    <button type="button" class="dj-account-nav-item" id="nav-change-password" onclick="switchTab('change-password-pane', this, 'change-password')">
+                        <span class="d-flex align-items-center">
+                            <span class="nav-icon"><i class="bi bi-shield-lock-fill"></i></span>
+                            <span>Change Password</span>
+                        </span>
+                        <i class="bi bi-chevron-right small text-muted"></i>
+                    </button>
+
+                    <hr class="my-2 text-muted opacity-25">
+
+                    <a href="{% url 'shop:logout' %}" class="dj-account-nav-item text-danger">
+                        <span class="d-flex align-items-center">
+                            <span class="nav-icon bg-danger-subtle text-danger"><i class="bi bi-box-arrow-right"></i></span>
+                            <span>Sign Out</span>
+                        </span>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Right Column: Account Content Panes -->
+        <div class="col-lg-9 col-md-8">
+            
+            <!-- ═══════════════════════════════════════════════════════════════
+                 PANE 1: ACCOUNT DETAILS & OVERVIEW
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="dj-account-main-card shadow-sm account-pane" id="account-details-pane">
+                
+                <!-- Pane Header -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-2">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">Account Overview</h4>
+                        <p class="text-secondary small mb-0">Manage your profile personal information and view spending activity.</p>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary fw-bold rounded-pill px-4 py-1.5" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                    </button>
+                </div>
+
+                <!-- 3 Modern Metric Stat Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="dj-metric-card">
+                            <div class="dj-metric-icon blue">
+                                <i class="bi bi-box-seam-fill"></i>
+                            </div>
+                            <div class="dj-metric-num">{{ total_orders }}</div>
+                            <div class="dj-metric-label">Total Orders</div>
+                            <div class="dj-metric-sub">Lifetime smartphone orders</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="dj-metric-card">
+                            <div class="dj-metric-icon green">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="dj-metric-num text-success">{{ completed_orders_count }}</div>
+                            <div class="dj-metric-label">Completed Orders</div>
+                            <div class="dj-metric-sub">Fulfilled & verified</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-sm-12">
+                        <div class="dj-metric-card">
+                            <div class="dj-metric-icon purple">
+                                <i class="bi bi-wallet2"></i>
+                            </div>
+                            <div class="dj-metric-num" style="color: var(--primary);">&#2547; {{ total_spent|floatformat:"0" }}</div>
+                            <div class="dj-metric-label">Total Amount Spent</div>
+                            <div class="dj-metric-sub">Across all confirmed orders</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Information Grid -->
+                <h5 class="fw-bold text-dark mb-3">Personal Details</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <div class="dj-info-card">
+                            <div class="dj-info-label"><i class="bi bi-person me-1"></i>First Name</div>
+                            <div class="dj-info-val">{{ customer.first_name|default:user.first_name|default:"Not specified" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="dj-info-card">
+                            <div class="dj-info-label"><i class="bi bi-person me-1"></i>Last Name</div>
+                            <div class="dj-info-val">{{ customer.last_name|default:user.last_name|default:"Not specified" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="dj-info-card">
+                            <div class="dj-info-label"><i class="bi bi-envelope me-1"></i>Email Address</div>
+                            <div class="dj-info-val">{{ user.email }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="dj-info-card">
+                            <div class="dj-info-label"><i class="bi bi-telephone me-1"></i>Mobile Phone</div>
+                            <div class="dj-info-val">{{ customer.phone|default:"Not specified" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Default Delivery Address Quick View -->
+                <div class="p-3 bg-light rounded-4 border">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Primary Delivery Address</h6>
+                        <button type="button" class="btn btn-sm btn-link text-primary fw-bold p-0 text-decoration-none" onclick="switchTab('addresses-pane', document.getElementById('nav-addresses'), 'addresses')">
+                            Manage Addresses <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                    {% with default_addr=saved_addresses.first %}
+                        {% if default_addr %}
+                            <p class="text-secondary small mb-1"><strong>{{ default_addr.city }}, {{ default_addr.country }}</strong> &bull; Postal Code: {{ default_addr.postal_code|default:"N/A" }}</p>
+                            <p class="text-muted small mb-0">{{ default_addr.address_line }}</p>
+                        {% elif customer.address %}
+                            <p class="text-secondary small mb-0">{{ customer.address }}</p>
+                        {% else %}
+                            <p class="text-muted small mb-0">No default delivery address set yet. Click "Manage Addresses" to add one.</p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 PANE 2: ORDERS LIST
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="dj-account-main-card shadow-sm account-pane d-none" id="orders-pane">
+                <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">My Orders</h4>
+                        <p class="text-secondary small mb-0">Track and view invoices for all your recent smartphone orders.</p>
+                    </div>
+                    {% if total_orders %}
+                        <span class="badge bg-primary text-white rounded-pill px-3 py-1.5 fw-semibold">{{ total_orders }} Total</span>
+                    {% endif %}
+                </div>
+                
+                {% if orders %}
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                        <thead class="table-light">
+                            <tr class="small text-uppercase text-secondary fw-bold">
+                                <th>Order #</th>
+                                <th>Date</th>
+                                <th>Product</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ord in orders %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <code class="fw-bold text-dark fs-6">{{ ord.order_number }}</code>
+                                        <button type="button" class="btn btn-sm btn-link text-secondary p-0 ms-1" onclick="copyToClipboard('{{ ord.order_number }}', this)" title="Copy Order ID">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark small">{{ ord.order_date|date:"d M Y" }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ ord.order_date|time:"h:i A" }}</div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        {% if ord.product.image %}
+                                            <img src="{{ ord.product.image.url }}" alt="{{ ord.product.name }}" class="rounded bg-light border p-1" style="width: 44px; height: 44px; object-fit: contain;">
+                                        {% endif %}
+                                        <div>
+                                            <a href="{% url 'shop:product_detail' ord.product.id %}" class="small fw-bold text-dark text-decoration-none d-block">
+                                                {{ ord.product.name }}
+                                            </a>
+                                            <div class="d-flex align-items-center gap-1 mt-0.5">
+                                                {% if ord.variant %}
+                                                    <span class="badge bg-light text-secondary border small py-0">{{ ord.variant.name }}</span>
+                                                {% endif %}
+                                                <span class="text-muted small">&times; {{ ord.quantity }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="fw-bold text-dark">&#2547; {{ ord.total_price|floatformat:"0" }}</td>
+                                <td>
+                                    <span class="dj-status-pill status-{{ ord.status|lower }}">
+                                        <span class="dj-status-dot"></span>
+                                        {{ ord.status }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex align-items-center gap-1.5">
+                                        <a href="{% url 'shop:order_detail' ord.order_number %}" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1 fw-semibold">
+                                            <i class="bi bi-receipt me-1"></i> Invoice
+                                        </a>
+                                        <a href="{% url 'shop:order_lookup' %}?order_number={{ ord.order_number }}" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary" title="Track Shipment">
+                                            <i class="bi bi-truck"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle" style="width: 80px; height: 80px;">
+                            <i class="bi bi-bag-x fs-1 text-muted"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-dark">No Orders Placed Yet</h5>
+                    <p class="text-muted small mb-4" style="max-width: 400px; margin: 0 auto;">Browse our latest collection of smartphones and accessories to place your first order.</p>
+                    <a href="{% url 'shop:product_list' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold text-white shadow-sm">
+                        <i class="bi bi-shop me-1"></i> Shop Smartphones
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 PANE 3: SAVED ADDRESSES
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="dj-account-main-card shadow-sm account-pane d-none" id="addresses-pane">
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-2">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">Delivery Addresses</h4>
+                        <p class="text-secondary small mb-0">Manage and customize your shipping addresses for fast 1-click checkout.</p>
+                    </div>
+                    <button type="button" class="btn btn-primary text-white fw-bold rounded-pill px-4 py-1.5 shadow-sm" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                        <i class="bi bi-plus-lg me-1"></i> Add New Address
+                    </button>
+                </div>
+
+                <div class="row g-3">
+                    {% for addr in saved_addresses %}
+                    <div class="col-md-6">
+                        <div class="dj-address-card {% if addr.is_default %}is-default{% endif %}">
+                            <div class="d-flex align-items-start justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 bg-primary-subtle text-primary rounded-3">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-0">{{ addr.city }}, {{ addr.country }}</h6>
+                                </div>
+                                {% if addr.is_default %}
+                                    <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 small">
+                                        <i class="bi bi-check2 me-1"></i>Default
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <p class="text-secondary small mb-1 mt-2">
+                                <i class="bi bi-signpost-2 me-1 text-muted"></i>{{ addr.address_line }}
+                            </p>
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-mailbox me-1"></i>Postal Code: <strong>{{ addr.postal_code|default:"N/A" }}</strong>
+                            </p>
+
+                            <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                <div>
+                                    {% if not addr.is_default %}
+                                        <a href="{% url 'shop:address_set_default' addr.id %}" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary small fw-semibold">
+                                            <i class="bi bi-star me-1"></i>Set Default
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold" data-bs-toggle="modal" data-bs-target="#editAddressModal{{ addr.id }}">
+                                        <i class="bi bi-pencil-square me-1"></i>Edit
+                                    </button>
+                                    <a href="{% url 'shop:address_delete' addr.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold text-decoration-none" onclick="return confirm('Are you sure you want to delete this delivery address?');">
+                                        <i class="bi bi-trash me-1"></i>Delete
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal: Edit Address {{ addr.id }} -->
+                    <div class="modal fade" id="editAddressModal{{ addr.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 rounded-4 shadow">
+                                <div class="modal-header border-bottom">
+                                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Delivery Address</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="{% url 'shop:address_edit' addr.id %}" method="post">
+                                    {% csrf_token %}
+                                    <div class="modal-body p-4">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-dark">Street Address / Road / House</label>
+                                            <input type="text" name="address_line" class="form-control" value="{{ addr.address_line }}" required>
+                                        </div>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-dark">City / Division</label>
+                                                <input type="text" name="city" class="form-control" value="{{ addr.city }}" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-dark">Postal Code</label>
+                                                <input type="text" name="postal_code" class="form-control" value="{{ addr.postal_code|default:'' }}">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-dark">Country</label>
+                                            <input type="text" name="country" class="form-control" value="{{ addr.country|default:'Bangladesh' }}" required>
+                                        </div>
+                                        <div class="form-check p-2 bg-light rounded-3">
+                                            <input class="form-check-input ms-1" type="checkbox" name="is_default" id="defAddr{{ addr.id }}" {% if addr.is_default %}checked{% endif %}>
+                                            <label class="form-check-label small fw-semibold text-dark ms-2" for="defAddr{{ addr.id }}">
+                                                Set as primary default delivery address
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top">
+                                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary text-white fw-bold rounded-pill px-4">Update Address</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 70px; height: 70px;">
+                            <i class="bi bi-geo-alt fs-2 text-muted"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark">No Delivery Addresses Saved Yet</h6>
+                        <p class="text-muted small mb-3">Save your home, office, or alternative shipping addresses for effortless ordering.</p>
+                        <button class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                            <i class="bi bi-plus-lg me-1"></i> Add Your First Address
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 PANE 4: CHANGE PASSWORD
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="dj-account-main-card shadow-sm account-pane d-none" id="change-password-pane">
+                <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">Change Password</h4>
+                        <p class="text-secondary small mb-0">Ensure your account uses a strong, secure password to protect your account and order history.</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-7 col-md-10">
+                        <form action="{% url 'shop:password_change' %}" method="post" id="changePasswordForm">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-dark">Current Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock-fill"></i></span>
+                                    <input type="password" name="current_password" id="current_password" class="form-control border-start-0 border-end-0" placeholder="Enter current password" required>
+                                    <button class="btn btn-outline-secondary bg-white border-start-0 text-secondary" type="button" onclick="togglePassVisibility('current_password', this)" title="Show/Hide Password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-dark">New Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-key-fill"></i></span>
+                                    <input type="password" name="new_password" id="new_password" class="form-control border-start-0 border-end-0" placeholder="Minimum 6 characters" oninput="checkPasswordMatch()" required>
+                                    <button class="btn btn-outline-secondary bg-white border-start-0 text-secondary" type="button" onclick="togglePassVisibility('new_password', this)" title="Show/Hide Password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-dark">Confirm New Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-check2-circle"></i></span>
+                                    <input type="password" name="confirm_new_password" id="confirm_new_password" class="form-control border-start-0 border-end-0" placeholder="Re-enter new password" oninput="checkPasswordMatch()" required>
+                                    <button class="btn btn-outline-secondary bg-white border-start-0 text-secondary" type="button" onclick="togglePassVisibility('confirm_new_password', this)" title="Show/Hide Password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="small mt-1" id="pwMatchMsg"></div>
+                            </div>
+
+                            <div class="p-3 bg-light rounded-3 mb-4">
+                                <div class="small text-muted fw-bold mb-1">Password Requirements:</div>
+                                <div class="small text-muted d-flex align-items-center gap-1.5" id="req-length">
+                                    <i class="bi bi-circle small"></i> At least 6 characters in length
+                                </div>
+                                <div class="small text-muted d-flex align-items-center gap-1.5 mt-0.5" id="req-match">
+                                    <i class="bi bi-circle small"></i> New and Confirm passwords must match
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary text-white fw-bold rounded-pill px-4 py-2 shadow-sm">
+                                <i class="bi bi-shield-check me-1"></i> Update Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL: EDIT PROFILE & AVATAR
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-person-gear text-primary me-2"></i>Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'shop:profile_edit' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    
+                    <!-- Avatar Upload & Preview -->
+                    <div class="text-center mb-4">
+                        <div class="dj-avatar-wrapper" style="width: 88px; height: 88px;">
+                            {% if customer.profile_image %}
+                                <img src="{{ customer.profile_image.url }}" alt="{{ customer.get_full_name }}" class="dj-avatar-img" id="modalAvatarPreview">
+                            {% else %}
+                                <div class="dj-avatar-initials" id="modalAvatarPreviewInitials">{{ user_initials }}</div>
+                                <img src="" alt="Preview" class="dj-avatar-img d-none" id="modalAvatarPreview">
+                            {% endif %}
+                        </div>
+                        <label for="id_profile_image" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mt-1 cursor-pointer">
+                            <i class="bi bi-upload me-1"></i> Choose New Photo
+                        </label>
+                        <input type="file" name="profile_image" id="id_profile_image" class="d-none" accept="image/*" onchange="previewAvatar(this)">
+                    </div>
+
+                    <!-- First & Last Name in 2 columns -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">First Name <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" class="form-control" value="{{ customer.first_name|default:user.first_name }}" placeholder="First name" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Last Name</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ customer.last_name|default:user.last_name }}" placeholder="Last name">
+                        </div>
+                    </div>
+
+                    <!-- Email & Mobile -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Mobile Number</label>
+                            <input type="text" name="phone" class="form-control" value="{{ customer.phone|default:'' }}" placeholder="+880 1712-345678">
+                        </div>
+                    </div>
+
+                    <!-- Address Line -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Street / Area Address</label>
+                        <textarea name="address" class="form-control" rows="2" placeholder="House, Road, Area">{{ customer.address|default:'' }}</textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary text-white fw-bold rounded-pill px-4 shadow-sm">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL: ADD NEW ADDRESS
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Add New Delivery Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'shop:address_create' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Street Address / Road / House <span class="text-danger">*</span></label>
+                        <input type="text" name="address_line" class="form-control" placeholder="House # 12, Road # 4, Block B, Banani" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">City / Division <span class="text-danger">*</span></label>
+                            <input type="text" name="city" class="form-control" placeholder="Dhaka" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Postal Code</label>
+                            <input type="text" name="postal_code" class="form-control" placeholder="1213">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Country <span class="text-danger">*</span></label>
+                        <input type="text" name="country" class="form-control" value="Bangladesh" required>
+                    </div>
+                    <div class="form-check p-2 bg-light rounded-3">
+                        <input type="checkbox" name="is_default" class="form-check-input ms-1" id="is_default_new_check" checked>
+                        <label class="form-check-label small fw-semibold text-dark ms-2" for="is_default_new_check">
+                            Set as primary default delivery address
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary text-white fw-bold rounded-pill px-4 shadow-sm">Save Address</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     DASHBOARD JAVASCRIPT LOGIC
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+function switchTab(paneId, btn, hashName) {
+    document.querySelectorAll('.account-pane').forEach(p => p.classList.add('d-none'));
+    document.querySelectorAll('.dj-account-nav-item').forEach(b => b.classList.remove('active'));
+    
+    const targetPane = document.getElementById(paneId);
+    if (targetPane) {
+        targetPane.classList.remove('d-none');
+    }
+    if (btn) {
+        btn.classList.add('active');
+    }
+    if (hashName) {
+        history.replaceState(null, null, '#' + hashName);
+    }
+}
+
+function copyToClipboard(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            const origHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check-lg text-success"></i>';
+            setTimeout(() => { btn.innerHTML = origHTML; }, 2000);
+        });
+    } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        const origHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-lg text-success"></i>';
+        setTimeout(() => { btn.innerHTML = origHTML; }, 2000);
+    }
+}
+
+function togglePassVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+function checkPasswordMatch() {
+    const p1 = document.getElementById('new_password');
+    const p2 = document.getElementById('confirm_new_password');
+    const reqLen = document.getElementById('req-length');
+    const reqMatch = document.getElementById('req-match');
+    if (!p1 || !p2) return;
+
+    if (p1.value.length >= 6) {
+        reqLen.className = 'small text-success d-flex align-items-center gap-1.5 fw-bold';
+        reqLen.innerHTML = '<i class="bi bi-check-circle-fill"></i> At least 6 characters in length';
+    } else {
+        reqLen.className = 'small text-muted d-flex align-items-center gap-1.5';
+        reqLen.innerHTML = '<i class="bi bi-circle small"></i> At least 6 characters in length';
+    }
+
+    if (p2.value.length > 0) {
+        if (p1.value === p2.value) {
+            reqMatch.className = 'small text-success d-flex align-items-center gap-1.5 fw-bold';
+            reqMatch.innerHTML = '<i class="bi bi-check-circle-fill"></i> Passwords match perfectly';
+        } else {
+            reqMatch.className = 'small text-danger d-flex align-items-center gap-1.5 fw-bold';
+            reqMatch.innerHTML = '<i class="bi bi-x-circle-fill"></i> Passwords do not match';
+        }
+    } else {
+        reqMatch.className = 'small text-muted d-flex align-items-center gap-1.5';
+        reqMatch.innerHTML = '<i class="bi bi-circle small"></i> New and Confirm passwords must match';
+    }
+}
+
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewImg = document.getElementById('modalAvatarPreview');
+            const previewInitials = document.getElementById('modalAvatarPreviewInitials');
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.classList.remove('d-none');
+            }
+            if (previewInitials) {
+                previewInitials.classList.add('d-none');
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    function handleHash() {
+        const hash = window.location.hash;
+        if (hash === '#addresses') {
+            const btn = document.getElementById('nav-addresses');
+            if (btn) switchTab('addresses-pane', btn, 'addresses');
+        } else if (hash === '#orders') {
+            const btn = document.getElementById('nav-orders');
+            if (btn) switchTab('orders-pane', btn, 'orders');
+        } else if (hash === '#change-password') {
+            const btn = document.getElementById('nav-change-password');
+            if (btn) switchTab('change-password-pane', btn, 'change-password');
+        } else {
+            const btn = document.getElementById('nav-account-details');
+            if (btn) switchTab('account-details-pane', btn, 'account-details');
+        }
+    }
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+});
+</script>
+{% endblock %}

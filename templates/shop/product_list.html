@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if selected_brand %}{{ selected_brand }} Phones - djCommerce
+    {% elif selected_category %}{{ selected_category.name }} - djCommerce
+    {% elif query %}Search: "{{ query }}" - djCommerce
+    {% else %}All Smartphones & Mobile Devices - djCommerce{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Top Showcase Banner -->
+    <div class="dj-category-banner d-flex align-items-center justify-content-between">
+        <div>
+            <h2 class="mb-2">
+                {% if selected_brand %}
+                    The Newest {{ selected_brand }}.
+                {% elif selected_category %}
+                    {{ selected_category.name }}.
+                {% else %}
+                    The Newest Flagships.
+                {% endif %}
+            </h2>
+            <p>Find the one that's yours with official warranty & 0% EMI.</p>
+        </div>
+        <div class="d-none d-md-block">
+            <span class="dj-banner-badge">
+                <i class="bi bi-shield-check"></i> Authentic Stock
+            </span>
+        </div>
+    </div>
+
+    <!-- Breadcrumb & Header -->
+    <nav aria-label="breadcrumb" class="mb-2">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}" class="text-secondary text-decoration-none">Mobile Phone</a></li>
+            {% if selected_brand %}
+                <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_brand }}</li>
+            {% elif selected_category %}
+                <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_category.name }}</li>
+            {% else %}
+                <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">All Phones</li>
+            {% endif %}
+        </ol>
+    </nav>
+
+    <h1 class="h2 fw-bold text-dark mb-4">
+        {% if selected_brand %}
+            {{ selected_brand }}
+        {% elif selected_category %}
+            {{ selected_category.name }}
+        {% elif query %}
+            Search Results for "{{ query }}"
+        {% else %}
+            Smartphones
+        {% endif %}
+    </h1>
+
+    <div class="row g-4">
+        
+        <!-- Left Column: Filter Sidebar -->
+        <div class="col-lg-3 col-md-4">
+            <aside class="dj-filter-sidebar">
+                <div class="dj-filter-header">
+                    <span><i class="bi bi-funnel me-1.5 text-primary"></i> Filters</span>
+                    {% if min_price or max_price or availability_filter or selected_brand or selected_category %}
+                        <a href="{% url 'shop:product_list' %}" class="small text-danger text-decoration-none fw-bold">Reset</a>
+                    {% endif %}
+                </div>
+
+                <form method="get" id="filter-form" action="{% url 'shop:product_list' %}">
+                    {% if selected_category %}
+                        <input type="hidden" name="category" value="{{ selected_category.slug }}">
+                    {% endif %}
+                    {% if query %}
+                        <input type="hidden" name="q" value="{{ query }}">
+                    {% endif %}
+                    {% if sort %}
+                        <input type="hidden" name="sort" value="{{ sort }}">
+                    {% endif %}
+
+                    <!-- Filter 0: Category & Subcategories -->
+                    <div class="dj-filter-group">
+                        <div class="dj-filter-title">
+                            <span>Categories</span>
+                            <i class="bi bi-chevron-down text-muted small"></i>
+                        </div>
+                        <div class="dj-filter-list">
+                            {% for parent in nav_parent_categories %}
+                            <div class="mb-2">
+                                <a href="{% url 'shop:product_list' %}?category={{ parent.slug }}" class="d-flex align-items-center justify-content-between text-decoration-none fw-bold small {% if selected_category.slug == parent.slug or selected_category.parent.slug == parent.slug %}text-primary{% else %}text-dark{% endif %}">
+                                    <span><i class="bi {{ parent.icon }} me-1.5 text-primary"></i> {{ parent.name }}</span>
+                                    <i class="bi bi-chevron-right small text-muted"></i>
+                                </a>
+                                {% if selected_category.slug == parent.slug or selected_category.parent.slug == parent.slug %}
+                                <div class="ps-3 mt-1.5 border-start border-2 border-primary">
+                                    {% for sub in parent.subcategories.all %}
+                                    <a href="{% url 'shop:product_list' %}?category={{ sub.slug }}" class="d-block py-1 small text-decoration-none {% if selected_category.slug == sub.slug %}fw-bold text-primary{% else %}text-secondary{% endif %}">
+                                        {{ sub.name }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Filter 1: Price Range (Dual Slider) -->
+                    <div class="dj-filter-group">
+                        <div class="dj-filter-title">
+                            <span>Price Range</span>
+                            <i class="bi bi-chevron-down text-muted small"></i>
+                        </div>
+                        <div class="dj-price-slider-wrap">
+                            <div class="dj-price-slider-track" id="price-slider-track">
+                                <div class="dj-price-slider-range" id="price-slider-range"></div>
+                                <input type="range" class="dj-range-input dj-range-min" id="price-range-min"
+                                       min="0" max="300000" step="500" value="{{ min_price|default:'0' }}">
+                                <input type="range" class="dj-range-input dj-range-max" id="price-range-max"
+                                       min="0" max="300000" step="500" value="{{ max_price|default:'300000' }}">
+                            </div>
+                            <div class="dj-price-values">
+                                <div class="dj-price-val-box">
+                                    <span class="dj-price-val-label">Min</span>
+                                    <span class="dj-price-val" id="price-val-min">৳{{ min_price|default:'0' }}</span>
+                                </div>
+                                <div class="dj-price-val-box">
+                                    <span class="dj-price-val-label">Max</span>
+                                    <span class="dj-price-val" id="price-val-max">৳{{ max_price|default:'300000' }}</span>
+                                </div>
+                            </div>
+                            <input type="hidden" name="min_price" id="hidden-min-price" value="{{ min_price|default:'' }}">
+                            <input type="hidden" name="max_price" id="hidden-max-price" value="{{ max_price|default:'' }}">
+                            <button type="submit" class="dj-price-apply-btn" id="price-apply-btn">
+                                <i class="bi bi-funnel-fill me-1"></i> Apply Price
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter 2: Availability -->
+                    <div class="dj-filter-group">
+                        <div class="dj-filter-title">
+                            <span>Availability</span>
+                            <i class="bi bi-chevron-down text-muted small"></i>
+                        </div>
+                        <div class="dj-filter-list">
+                            <label class="dj-filter-item">
+                                <input type="radio" name="availability" value="" class="dj-filter-checkbox" {% if not availability_filter %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                <span>All</span>
+                            </label>
+                            <label class="dj-filter-item">
+                                <input type="radio" name="availability" value="in_stock" class="dj-filter-checkbox" {% if availability_filter == 'in_stock' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                <span>In Stock</span>
+                            </label>
+                            <label class="dj-filter-item">
+                                <input type="radio" name="availability" value="out_of_stock" class="dj-filter-checkbox" {% if availability_filter == 'out_of_stock' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                <span>Out of Stock</span>
+                            </label>
+                            <label class="dj-filter-item">
+                                <input type="radio" name="availability" value="upcoming" class="dj-filter-checkbox" {% if availability_filter == 'upcoming' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                <span>Upcoming</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Filter 4: Brand -->
+                    <div class="dj-filter-group">
+                        <div class="dj-filter-title">
+                            <span>Brand</span>
+                            <i class="bi bi-chevron-down text-muted small"></i>
+                        </div>
+                        <div class="dj-filter-list">
+                            {% for b in available_brands %}
+                            <label class="dj-filter-item">
+                                <input type="radio" name="brand" value="{{ b }}" class="dj-filter-checkbox" {% if selected_brand == b %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                <span>{{ b }}</span>
+                            </label>
+                            {% endfor %}
+                            {% if selected_brand %}
+                            <label class="dj-filter-item text-primary fw-semibold mt-1">
+                                <a href="{% url 'shop:product_list' %}{% if selected_category %}?category={{ selected_category.slug }}{% endif %}" class="text-decoration-none small">
+                                    &times; Clear Brand
+                                </a>
+                            </label>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </form>
+            </aside>
+        </div>
+
+        <!-- Right Column: Product Grid & Sorting -->
+        <div class="col-lg-9 col-md-8">
+            
+            <!-- Header Bar: Showing Items & Sort Dropdown -->
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                <div class="fw-bold text-dark fs-6">
+                    Showing: <span class="text-secondary">({{ total_count }} Item{{ total_count|pluralize }})</span>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <label for="catalog-sort-select" class="small text-muted fw-bold text-nowrap">Sort By:</label>
+                    <select id="catalog-sort-select" class="form-select form-select-sm rounded-pill" style="width: auto;" onchange="applySort(this.value)">
+                        <option value="default" {% if sort == 'default' %}selected{% endif %}>Default</option>
+                        <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 3-Column Product Grid -->
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+                {% for product in products %}
+                <div class="col">
+                    <div class="dj-card-v2">
+                        
+                        <!-- Image Container -->
+                        <div class="dj-card-v2-img">
+                            {% if product.discount_percent > 0 %}
+                                <span class="dj-badge-discount-pct">
+                                    {{ product.discount_percent }}% OFF
+                                </span>
+                            {% endif %}
+                            {% if product.badge_info %}
+                                <span class="dj-product-badge {{ product.badge_info.css_class }}">
+                                    <i class="{{ product.badge_info.icon }}"></i> {{ product.badge_info.label }}
+                                </span>
+                            {% endif %}
+                            <a href="{% url 'shop:product_detail' product.pk %}">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                                {% else %}
+                                    <i class="bi bi-phone fs-1 text-muted"></i>
+                                {% endif %}
+                            </a>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="dj-card-v2-body">
+                            <!-- Product Brand -->
+                            <span class="dj-product-brand">{{ product.brand|default:'Brand' }}</span>
+
+                            <!-- Product Title -->
+                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-card-v2-title" title="{{ product.name }}">
+                                {{ product.name }}
+                            </a>
+
+                            <!-- Price Box -->
+                            <div class="dj-price-box">
+                                <span class="dj-offer-price">&#2547; {{ product.price|floatformat:"0" }}</span>
+                                {% if product.regular_price and product.regular_price > product.price %}
+                                    <span class="dj-regular-price">&#2547; {{ product.regular_price|floatformat:"0" }}</span>
+                                {% endif %}
+                                {% if product.discount_amount > 0 %}
+                                    <span class="dj-discount-pill">&#2547; {{ product.discount_amount|floatformat:"0" }} OFF</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Action Row: Pill Button + Cart Icon -->
+                            <div class="dj-card-v2-actions">
+                                <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn">
+                                    {% if "18" in product.name or "17" in product.name or "S26" in product.name or "Pixel 10" in product.name %}
+                                        Pre Order
+                                    {% else %}
+                                        Shop Now
+                                    {% endif %}
+                                </a>
+
+                                <form action="{% url 'shop:cart_add' product.pk %}" method="post" class="d-inline m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="dj-icon-btn-cart" title="Add to Cart">
+                                        <i class="bi bi-cart3"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 py-5 text-center">
+                    <div class="p-5 bg-white rounded-4 border">
+                        <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
+                        <h4 class="fw-bold">No Products Found</h4>
+                        <p class="text-muted">Try adjusting your filters or price range.</p>
+                        <a href="{% url 'shop:product_list' %}" class="btn btn-primary text-white rounded-pill px-4 fw-bold">
+                            Reset Filters
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination Pills -->
+            {% if page_obj.has_other_pages %}
+            <div class="dj-pagination-pill">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if selected_brand %}&brand={{ selected_brand }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if availability_filter %}&availability={{ availability_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" class="dj-page-link">
+                        &lt; Previous
+                    </a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="dj-page-link active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if selected_brand %}&brand={{ selected_brand }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if availability_filter %}&availability={{ availability_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" class="dj-page-link">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if selected_brand %}&brand={{ selected_brand }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if availability_filter %}&availability={{ availability_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" class="dj-page-link">
+                        Next &gt;
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Price Range Slider & Sort Helper Script -->
+<script>
+/* ── Dual Range Price Slider ────────────────────────────────────── */
+(function() {
+    const rangeMin = document.getElementById('price-range-min');
+    const rangeMax = document.getElementById('price-range-max');
+    const sliderRange = document.getElementById('price-slider-range');
+    const valMin = document.getElementById('price-val-min');
+    const valMax = document.getElementById('price-val-max');
+    const hiddenMin = document.getElementById('hidden-min-price');
+    const hiddenMax = document.getElementById('hidden-max-price');
+    const minGap = 1000;
+
+    function formatPrice(v) {
+        return '৳' + Number(v).toLocaleString('en-IN');
+    }
+
+    function updateSlider() {
+        let minVal = parseInt(rangeMin.value);
+        let maxVal = parseInt(rangeMax.value);
+
+        if (maxVal - minVal < minGap) {
+            if (this === rangeMin) {
+                rangeMin.value = maxVal - minGap;
+                minVal = maxVal - minGap;
+            } else {
+                rangeMax.value = minVal + minGap;
+                maxVal = minVal + minGap;
+            }
+        }
+
+        const totalRange = parseInt(rangeMax.max);
+        const leftPct = (minVal / totalRange) * 100;
+        const rightPct = 100 - (maxVal / totalRange) * 100;
+
+        sliderRange.style.left = leftPct + '%';
+        sliderRange.style.right = rightPct + '%';
+
+        valMin.textContent = formatPrice(minVal);
+        valMax.textContent = formatPrice(maxVal);
+
+        // Only set hidden values if user actually moved the sliders
+        if (minVal > 0) {
+            hiddenMin.value = minVal;
+        } else {
+            hiddenMin.value = '';
+        }
+        if (maxVal < totalRange) {
+            hiddenMax.value = maxVal;
+        } else {
+            hiddenMax.value = '';
+        }
+    }
+
+    rangeMin.addEventListener('input', updateSlider);
+    rangeMax.addEventListener('input', updateSlider);
+
+    // Init on load
+    updateSlider.call(rangeMin);
+})();
+
+function applySort(val) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('sort', val);
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}

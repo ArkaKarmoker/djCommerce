@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Secure Checkout & Delivery - djCommerce{% endblock %}
+
+{% block content %}
+<div class="container py-4 dj-checkout-wrap">
+
+    <!-- Compact Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small mb-0">
+            <li class="breadcrumb-item">
+                <a href="{% url 'shop:home' %}" class="text-decoration-none text-muted">
+                    <i class="bi bi-house-door me-1"></i>Home
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'shop:cart_detail' %}" class="text-decoration-none text-muted">Shopping Cart</a>
+            </li>
+            <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">Checkout</li>
+        </ol>
+    </nav>
+
+    <!-- Modern Checkout Stepper -->
+    <div class="dj-checkout-stepper">
+        <a href="{% url 'shop:cart_detail' %}" class="dj-stepper-step completed">
+            <div class="dj-stepper-circle">
+                <i class="bi bi-check-lg"></i>
+            </div>
+            <span class="dj-stepper-label">Cart</span>
+        </a>
+        <div class="dj-stepper-line completed"></div>
+        <div class="dj-stepper-step active">
+            <div class="dj-stepper-circle">2</div>
+            <span class="dj-stepper-label">Shipping &amp; Payment</span>
+        </div>
+        <div class="dj-stepper-line"></div>
+        <div class="dj-stepper-step">
+            <div class="dj-stepper-circle">3</div>
+            <span class="dj-stepper-label">Confirmation</span>
+        </div>
+        <div class="dj-stepper-line"></div>
+        <div class="dj-stepper-step">
+            <div class="dj-stepper-circle">4</div>
+            <span class="dj-stepper-label">Shipping</span>
+        </div>
+        <div class="dj-stepper-line"></div>
+        <div class="dj-stepper-step">
+            <div class="dj-stepper-circle">5</div>
+            <span class="dj-stepper-label">Delivery</span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Customer & Delivery Form Column -->
+        <div class="col-lg-7">
+            <div class="dj-checkout-card mb-4">
+                
+                <form action="{% url 'shop:checkout' %}" method="post" id="checkout-form" class="dj-checkout-form" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="saved_address_id" id="selected-address-id" value="">
+
+                    <!-- Step 1: Shipping Details -->
+                    <div class="dj-checkout-section-header">
+                        <span class="dj-step-pill">1</span>
+                        <h2 class="dj-checkout-section-title">Shipping &amp; Recipient Information</h2>
+                    </div>
+                    <p class="dj-checkout-section-subtitle">
+                        Please provide accurate delivery information for swift courier dispatch.
+                    </p>
+
+                    <!-- Saved Addresses Selector (Address Book) -->
+                    {% if saved_addresses %}
+                    <div class="mb-4 pb-3 border-bottom">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-bold small text-uppercase text-dark mb-0">
+                                <i class="bi bi-journal-bookmark-fill text-primary me-1.5"></i> Saved Address Book:
+                            </label>
+                            <a href="{% url 'shop:dashboard' %}" class="small text-primary text-decoration-none fw-semibold">
+                                <i class="bi bi-pencil-square me-1"></i>Edit in Profile
+                            </a>
+                        </div>
+                        <div class="dj-saved-address-grid">
+                            {% for addr in saved_addresses %}
+                            <div class="dj-saved-address-card address-choice-card {% if form.saved_address_id.value|stringformat:'s' == addr.id|stringformat:'s' or not form.saved_address_id.value and forloop.first %}selected{% endif %}" 
+                                 onclick="selectSavedAddress('{{ addr.id }}', '{{ addr.address_line|escapejs }}{% if addr.city %}, {{ addr.city|escapejs }}{% endif %}{% if addr.country %}, {{ addr.country|escapejs }}{% endif %}', this);">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="small text-dark"><i class="bi bi-geo-alt text-primary me-1"></i>{{ addr.city }}, {{ addr.country }}</strong>
+                                    {% if addr.is_default %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">Default</span>
+                                    {% endif %}
+                                </div>
+                                <p class="small text-muted mb-1">{{ addr.address_line }}</p>
+                                <span class="small text-primary fw-semibold"><i class="bi bi-check2-circle me-1"></i>Deliver Here</span>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Option to enter new address -->
+                            <div class="dj-saved-address-card address-new-card d-flex flex-column justify-content-center align-items-center text-center py-3" 
+                                 onclick="useNewAddress();" style="border-style: dashed; background: #fafafa;">
+                                <i class="bi bi-plus-circle-fill text-primary fs-4 mb-1"></i>
+                                <strong class="small text-dark">Use New Address</strong>
+                                <span class="text-muted" style="font-size: 0.75rem;">Type a different address below</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Inputs Grid -->
+                    <div class="row g-3 mb-3">
+                        <!-- Full Name -->
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                <i class="bi bi-person text-secondary"></i> Full Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="col-md-6">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                <i class="bi bi-telephone text-secondary"></i> Phone Number <span class="text-danger">*</span>
+                            </label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Delivery Address -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <label for="{{ form.address.id_for_label }}" class="form-label mb-0">
+                                <i class="bi bi-geo-alt text-secondary"></i> Complete Delivery Address <span class="text-danger">*</span>
+                            </label>
+                            {% if saved_addresses %}
+                            <span class="small text-muted" style="font-size: 0.78rem;">Selected from Address Book or edit manually</span>
+                            {% endif %}
+                        </div>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                            <div class="invalid-feedback d-block">{{ form.address.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small text-muted">Include flat/house number, street name, area, and city.</div>
+
+                        <!-- Save this address to Address Book Option -->
+                        <div class="mt-2">
+                            <label class="dj-save-address-btn {% if form.save_to_address_book.value %}checked{% endif %}" for="id_save_to_address_book">
+                                <input type="checkbox" name="save_to_address_book" id="id_save_to_address_book" {% if form.save_to_address_book.value %}checked{% endif %}>
+                                <span>
+                                    <i class="bi bi-bookmark-check-fill"></i>
+                                    Save this address to Address Book for future orders
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="mb-4">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">
+                            <i class="bi bi-envelope text-secondary"></i> Email Address <span class="text-muted fw-normal small">(For e-receipt &amp; order tracking)</span>
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4" style="border-top: 1px dashed #e2e8f0;">
+
+                    <!-- Step 2: Payment Method -->
+                    <div class="dj-checkout-section-header">
+                        <span class="dj-step-pill">2</span>
+                        <h2 class="dj-checkout-section-title">Select Payment Method</h2>
+                    </div>
+                    <p class="dj-checkout-section-subtitle">
+                        Choose your preferred payment method. All transactions are securely processed.
+                    </p>
+
+                    <div class="dj-payment-options-grid">
+                        <!-- Option 1: Cash on Delivery -->
+                        <div class="dj-payment-card-option active" id="card-option-cod" onclick="selectPaymentOption('cod');">
+                            <div class="dj-payment-card-left">
+                                <input class="form-check-input" type="radio" name="payment_method" id="pay-cod" value="cod" checked>
+                                <div class="dj-payment-card-icon cod">
+                                    <i class="bi bi-cash-coin"></i>
+                                </div>
+                                <div>
+                                    <div class="dj-payment-card-title">Cash on Delivery (COD)</div>
+                                    <p class="dj-payment-card-desc">Pay with cash or mobile wallet upon receiving your package.</p>
+                                </div>
+                            </div>
+                            <div class="dj-payment-card-right d-none d-sm-flex">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small">
+                                    Zero Extra Fee
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Option 2: Stripe Online Card Payment -->
+                        <div class="dj-payment-card-option" id="card-option-stripe" onclick="selectPaymentOption('stripe');">
+                            <div class="dj-payment-card-left">
+                                <input class="form-check-input" type="radio" name="payment_method" id="pay-stripe" value="stripe">
+                                <div class="dj-payment-card-icon stripe">
+                                    <i class="bi bi-credit-card-2-front-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="dj-payment-card-title">Credit / Debit Card (Stripe)</div>
+                                    <p class="dj-payment-card-desc">Instant &amp; encrypted card processing powered by Stripe.</p>
+                                </div>
+                            </div>
+                            <div class="dj-payment-card-right d-none d-sm-flex">
+                                <span class="badge bg-white text-secondary border rounded px-2 py-1 small fw-semibold">Visa</span>
+                                <span class="badge bg-white text-secondary border rounded px-2 py-1 small fw-semibold">Mastercard</span>
+                                <span class="badge bg-white text-secondary border rounded px-2 py-1 small fw-semibold">Amex</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Place Order CTA Button -->
+                    <button type="submit" class="dj-btn-checkout-submit" id="checkout-submit-btn">
+                        <span class="btn-text d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-shield-lock-fill fs-5"></i>
+                            <span>Confirm Order &bull; &#2547; {{ cart.get_total_price|floatformat:"0" }}</span>
+                        </span>
+                        <span class="btn-loading d-none align-items-center justify-content-center gap-2">
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span>Processing Your Order...</span>
+                        </span>
+                    </button>
+
+                    <!-- Trust Micro Bar -->
+                    <div class="dj-checkout-trust-bar">
+                        <div class="dj-checkout-trust-item">
+                            <i class="bi bi-patch-check-fill text-primary"></i>
+                            <span>100% Genuine Sealed Products</span>
+                        </div>
+                        <div class="dj-checkout-trust-item">
+                            <i class="bi bi-arrow-repeat text-success"></i>
+                            <span>7-Day Replacement Guarantee</span>
+                        </div>
+                        <div class="dj-checkout-trust-item">
+                            <i class="bi bi-shield-shaded text-info"></i>
+                            <span>256-Bit SSL Encrypted</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Order Summary Column -->
+        <div class="col-lg-5">
+            <div class="dj-checkout-summary-card">
+                <div class="dj-checkout-summary-title">
+                    <span>Order Summary</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small">
+                        {{ cart|length }} {% if cart|length == 1 %}item{% else %}items{% endif %}
+                    </span>
+                </div>
+
+                <!-- Scrollable Order Items List -->
+                <div class="dj-checkout-items-list">
+                    {% for item in cart %}
+                    <div class="dj-checkout-item">
+                        <div class="dj-checkout-item-thumb">
+                            {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" loading="lazy">
+                            {% else %}
+                                <i class="bi bi-phone text-muted fs-5"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 min-w-0">
+                            <h3 class="dj-checkout-item-name text-truncate">{{ item.product.name }}</h3>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if item.variant %}
+                                    <span class="badge bg-light text-secondary border small py-0.5 px-1.5">{{ item.variant.name }}</span>
+                                {% endif %}
+                                <span class="dj-checkout-item-meta">Qty: {{ item.quantity }} &times; &#2547; {{ item.price|floatformat:"0" }}</span>
+                            </div>
+                        </div>
+                        <div class="dj-checkout-item-price">
+                            &#2547; {{ item.total_price|floatformat:"0" }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Price Breakdown Rows -->
+                <div class="dj-checkout-summary-row">
+                    <span>Subtotal</span>
+                    <span class="fw-semibold text-dark">&#2547; {{ cart.get_total_price|floatformat:"0" }}</span>
+                </div>
+
+                <div class="dj-checkout-summary-row">
+                    <span>Delivery Charges</span>
+                    <span class="text-success fw-bold">FREE Delivery</span>
+                </div>
+
+                <div class="dj-checkout-summary-row">
+                    <span>Official Warranty</span>
+                    <span class="text-secondary small">Included</span>
+                </div>
+
+                <!-- Total Highlight Box -->
+                <div class="dj-checkout-total-box">
+                    <div>
+                        <div class="dj-checkout-total-label">Total Payable</div>
+                        <div class="small text-muted" style="font-size: 0.78rem;">All taxes included</div>
+                    </div>
+                    <div class="dj-checkout-total-value">
+                        &#2547; {{ cart.get_total_price|floatformat:"0" }}
+                    </div>
+                </div>
+
+                <!-- Buyer Protection Guarantee -->
+                <div class="dj-checkout-guarantee-box">
+                    <i class="bi bi-shield-fill-check text-success fs-4 flex-shrink-0"></i>
+                    <div class="dj-checkout-guarantee-text">
+                        <strong class="text-dark d-block">Authorized Buyer Guarantee</strong>
+                        Your order is sealed with manufacturer tamper-proof security and covered by full brand warranty.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function selectPaymentOption(method) {
+    const codCard = document.getElementById('card-option-cod');
+    const stripeCard = document.getElementById('card-option-stripe');
+    const codRadio = document.getElementById('pay-cod');
+    const stripeRadio = document.getElementById('pay-stripe');
+
+    if (method === 'cod') {
+        codRadio.checked = true;
+        codCard.classList.add('active');
+        stripeCard.classList.remove('active');
+    } else if (method === 'stripe') {
+        stripeRadio.checked = true;
+        stripeCard.classList.add('active');
+        codCard.classList.remove('active');
+    }
+}
+
+function selectSavedAddress(addressId, addressText, cardElem) {
+    document.querySelectorAll('.address-choice-card, .address-new-card').forEach(c => {
+        c.classList.remove('selected');
+    });
+    if (cardElem) {
+        cardElem.classList.add('selected');
+    }
+
+    document.getElementById('selected-address-id').value = addressId;
+    const addressInput = document.getElementById('checkout-address');
+    if (addressInput && addressText) {
+        addressInput.value = addressText;
+    }
+}
+
+function useNewAddress() {
+    document.querySelectorAll('.address-choice-card, .address-new-card').forEach(c => {
+        c.classList.remove('selected');
+    });
+    const newCard = document.querySelector('.address-new-card');
+    if (newCard) {
+        newCard.classList.add('selected');
+    }
+    document.getElementById('selected-address-id').value = '';
+    const addressInput = document.getElementById('checkout-address');
+    if (addressInput) {
+        addressInput.value = '';
+        addressInput.focus();
+    }
+}
+
+// Form submit loading state
+document.addEventListener('DOMContentLoaded', function() {
+    const checkoutForm = document.getElementById('checkout-form');
+    const submitBtn = document.getElementById('checkout-submit-btn');
+
+    // Save to address book button state toggle
+    const saveCheck = document.getElementById('id_save_to_address_book');
+    if (saveCheck) {
+        const parentBtn = saveCheck.closest('.dj-save-address-btn');
+        if (parentBtn && saveCheck.checked) {
+            parentBtn.classList.add('checked');
+        }
+        saveCheck.addEventListener('change', function() {
+            if (parentBtn) {
+                parentBtn.classList.toggle('checked', this.checked);
+            }
+        });
+    }
+
+    if (checkoutForm && submitBtn) {
+        checkoutForm.addEventListener('submit', function() {
+            // Check form validity if supported
+            if (checkoutForm.checkValidity && !checkoutForm.checkValidity()) {
+                return;
+            }
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+            if (btnText && btnLoading) {
+                btnText.classList.add('d-none');
+                btnLoading.classList.remove('d-none');
+                btnLoading.classList.add('d-flex');
+            }
+            submitBtn.disabled = true;
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} - Price in Bangladesh | djCommerce{% endblock %}
+{% block meta_description %}{{ product.name }} price in Bangladesh starts from ৳ {{ product.price|floatformat:"0" }}. Official warranty, 0% EMI, color variants and genuine specs at djCommerce.{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}" class="text-secondary text-decoration-none">Mobile Phone</a></li>
+            {% if product.brand %}
+                <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}?brand={{ product.brand }}" class="text-secondary text-decoration-none">{{ product.brand }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ product.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Top Showcase Card -->
+    <div class="dj-pdp-top-card">
+        <div class="row g-4">
+            
+            <!-- Left: Gallery & Main Image -->
+            <div class="col-lg-5">
+                <div class="dj-product-img-wrapper mb-3" style="height: 380px; background: #fafafa; border: 1px solid #f1f5f9; border-radius: 12px;">
+                    {% if product.image %}
+                        <img id="main-product-image" src="{{ product.image.url }}" alt="{{ product.name }}" style="max-height: 340px; max-width: 100%; object-fit: contain;">
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="bi bi-phone fs-1"></i>
+                            <p class="mt-2 fw-semibold">Official Genuine Device</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Thumbnail Strip -->
+                {% if gallery_images or product.image %}
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    {% if product.image %}
+                    <div class="border rounded-3 p-1 gallery-thumb active" style="width: 64px; height: 64px; cursor: pointer; border-color: var(--primary) !important;" onclick="changeMainImage('{{ product.image.url }}', this)">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    {% endif %}
+                    {% for img in gallery_images %}
+                    <div class="border rounded-3 p-1 gallery-thumb" style="width: 64px; height: 64px; cursor: pointer;" onclick="changeMainImage('{{ img.product_image.url }}', this)">
+                        <img src="{{ img.product_image.url }}" alt="{{ img.alt_text|default:product.name }}" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right: Details, Swatches, Pricing & CTAs -->
+            <div class="col-lg-7">
+                <div class="ps-lg-2">
+                    
+                    <!-- Top Bar: Brand -->
+                    <div class="dj-pdp-brand-bar">
+                        <div class="dj-pdp-brand">
+                            <i class="bi bi-phone fs-5"></i>
+                            <span>{{ product.brand|default:"Official Brand" }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Title -->
+                    <h1 class="dj-pdp-title">{{ product.name }}</h1>
+
+                    <!-- Price & Stock & SKU Bar -->
+                    <div class="dj-pdp-price-strip">
+                        <span class="dj-pdp-cash-price">&#2547; {{ product.price|floatformat:"0" }}</span>
+                        {% if product.regular_price and product.regular_price > product.price %}
+                            <span class="dj-pdp-divider">|</span>
+                            <span class="dj-pdp-regular-price">&#2547; {{ product.regular_price|floatformat:"0" }}</span>
+                        {% endif %}
+                        <span class="dj-pdp-divider">|</span>
+                        <span>Availability: <span class="dj-pdp-instock">{% if product.in_stock %}In Stock{% else %}<span class="text-danger">Pre Order</span>{% endif %}</span></span>
+                        <span class="dj-pdp-divider">|</span>
+                        <span class="dj-pdp-code">Code: {{ sku_code }}</span>
+                    </div>
+
+                    <!-- Purchase / Selection Form -->
+                    <form action="{% url 'shop:cart_add' product.pk %}" method="post" id="pdp-purchase-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="color" id="selected-color-input" value="{% if variant_colors %}{{ variant_colors.0.name }}{% else %}Default{% endif %}">
+                        <input type="hidden" name="region" id="selected-region-input" value="{% if regions %}{{ regions.0.name }}{% else %}Default{% endif %}">
+                        <input type="hidden" name="storage" id="selected-storage-input" value="{% if storages %}{{ storages.0 }}{% else %}256GB{% endif %}">
+
+                        <!-- Color Selector -->
+                        <div class="dj-selector-box">
+                            <label class="dj-selector-label">Color:</label>
+                            <div class="dj-pills-row">
+                                {% for c in variant_colors %}
+                                <div class="dj-swatch-pill {% if forloop.first %}selected{% endif %}" onclick="selectColor(this, '{{ c.name }}')">
+                                    <span class="dot" style="background-color: {{ c.hex }};"></span>
+                                    <span>{{ c.name }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Region Selector -->
+                        <div class="dj-selector-box">
+                            <label class="dj-selector-label">Region:</label>
+                            <div class="dj-pills-row">
+                                {% for r in regions %}
+                                <div class="dj-option-pill {% if forloop.first %}selected{% endif %}" onclick="selectRegion(this, '{{ r.name }}')">
+                                    <span>{{ r.name }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Storage Selector -->
+                        <div class="dj-selector-box">
+                            <label class="dj-selector-label">Storage:</label>
+                            <div class="dj-pills-row">
+                                {% for s in storages %}
+                                <div class="dj-option-pill {% if forloop.counter == 3 or forloop.first %}selected{% endif %}" onclick="selectStorage(this, '{{ s }}')">
+                                    <span>{{ s }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Bullets List -->
+                        <ul class="dj-pdp-bullets">
+                            <li>1 Year Apple / Brand Official Warranty Support Except USA & Japan Variants</li>
+                            <li>Enjoy up to 12 months of 0% EMI (City Bank) on Australia Variant devices. Offer valid for Shop Pick-Up orders only. <a href="javascript:void(0)" class="text-primary text-decoration-none">T&C</a></li>
+                            <li>Australian Variant - Activation Mandatory for Shop & Online Purchases</li>
+                        </ul>
+
+                        <!-- Select Quantity & CTA Buttons -->
+                        <div class="mb-4">
+                            <label class="dj-selector-label mb-2">Select Quantity:</label>
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                
+                                <!-- Quantity Stepper -->
+                                <div class="dj-stepper">
+                                    <button type="button" class="dj-stepper-btn" onclick="stepQty(-1)" aria-label="Decrease Quantity">
+                                        <i class="bi bi-dash-lg"></i>
+                                    </button>
+                                    <input type="number" name="quantity" id="pdp-qty-input" class="dj-stepper-input" value="1" min="1" max="10" readonly>
+                                    <button type="button" class="dj-stepper-btn" onclick="stepQty(1)" aria-label="Increase Quantity">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Solid Primary Button: Shop Now -->
+                                <button type="button" class="dj-btn-solid-primary flex-grow-1 flex-md-grow-0" onclick="submitShopNow()">
+                                    Shop Now
+                                </button>
+
+                                <!-- Outline Cart Button: Add to Cart -->
+                                <button type="submit" class="dj-btn-outline-cart flex-grow-1 flex-md-grow-0">
+                                    <i class="bi bi-cart3"></i> Add To Cart
+                                </button>
+
+                            </div>
+                        </div>
+
+                    </form>
+
+                    <!-- Support Badges: Delivery Timescale -->
+                    <div class="pt-2 border-top">
+                        <div class="dj-badge-box-delivery">
+                            <i class="bi bi-truck text-secondary fs-5"></i>
+                            <span>Delivery Timescale: <strong>3-5 Days</strong> (Express Same Day in Dhaka)</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Specifications & Recently Viewed -->
+    <div class="row g-4 mb-5">
+        
+        <!-- Left: Specifications, Description & Reviews -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                
+                <!-- Tab Headers -->
+                <div class="card-header bg-white border-bottom p-3">
+                    <ul class="nav nav-pills" id="pdpTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active fw-bold text-dark rounded-pill px-4" id="specs-tab" data-bs-toggle="pill" data-bs-target="#specs-pane" type="button">
+                                Specification
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold text-dark rounded-pill px-4" id="desc-tab" data-bs-toggle="pill" data-bs-target="#desc-pane" type="button">
+                                Description
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold text-dark rounded-pill px-4" id="reviews-tab" data-bs-toggle="pill" data-bs-target="#reviews-pane" type="button">
+                                Review ({{ reviews.count }})
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="tab-content" id="pdpTabContent">
+                        
+                        <!-- Specifications Table -->
+                        <div class="tab-pane fade show active" id="specs-pane">
+                            <h5 class="fw-bold mb-3">Specification</h5>
+                            <table class="dj-specs-table">
+                                <tbody>
+                                    {% for key, val in specs_list %}
+                                    <tr>
+                                        <th>{{ key }}</th>
+                                        <td>{{ val }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Description Pane -->
+                        <div class="tab-pane fade" id="desc-pane">
+                            <h5 class="fw-bold mb-3">{{ product.name }} Overview</h5>
+                            <div class="text-secondary lh-lg">
+                                {{ product.description|safe }}
+                            </div>
+                        </div>
+
+                        <!-- Reviews Pane -->
+                        <div class="tab-pane fade" id="reviews-pane">
+                            <div class="row g-4">
+                                <div class="col-md-7">
+                                    <h6 class="fw-bold mb-3">Verified Buyer Reviews</h6>
+                                    {% for r in reviews %}
+                                    <div class="border rounded-3 p-3 mb-2 bg-light">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <strong class="text-dark">{{ r.customer.name }}</strong>
+                                            <div class="text-warning small">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= r.rating %}
+                                                        <i class="bi bi-star-fill"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <p class="small text-secondary mb-1">{{ r.comment }}</p>
+                                        <span class="text-muted" style="font-size: 0.72rem;">{{ r.created_at|date:"M d, Y" }}</span>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-muted small">No reviews yet. Be the first to share your thoughts!</p>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="p-3 border rounded-3 bg-white">
+                                        <h6 class="fw-bold mb-2">Write a Review</h6>
+                                        {% if user.is_authenticated %}
+                                        <form action="{% url 'shop:add_review' product.pk %}" method="post">
+                                            {% csrf_token %}
+                                            <div class="mb-2">
+                                                <label class="small fw-semibold">Rating</label>
+                                                <select name="rating" class="form-select form-select-sm">
+                                                    <option value="5">5 Stars - Outstanding</option>
+                                                    <option value="4">4 Stars - Very Good</option>
+                                                    <option value="3">3 Stars - Good</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="small fw-semibold">Your Review</label>
+                                                <textarea name="comment" class="form-control form-control-sm" rows="3" required></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary text-white fw-bold btn-sm w-100 rounded-pill">Submit Review</button>
+                                        </form>
+                                        {% else %}
+                                        <p class="small text-muted mb-2">Sign in to write a verified customer review.</p>
+                                        <a href="{% url 'shop:login' %}?next={{ request.path }}" class="btn btn-outline-dark btn-sm rounded-pill w-100 fw-bold">Sign In</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Right: Recently Viewed Sidebar -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3 text-dark">Recently Viewed</h5>
+                {% for item in recently_viewed %}
+                <div class="dj-recent-card">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="dj-recent-thumb">
+                    {% else %}
+                        <div class="dj-recent-thumb d-flex align-items-center justify-content-center bg-light rounded">
+                            <i class="bi bi-phone text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <div class="flex-grow-1 min-w-0">
+                        <a href="{% url 'shop:product_detail' item.pk %}" class="dj-recent-title">{{ item.name }}</a>
+                        <div class="dj-recent-price">&#2547; {{ item.price|floatformat:"0" }}</div>
+                        <a href="{% url 'shop:product_detail' item.pk %}" class="badge bg-light text-dark border text-decoration-none mt-1">
+                            View Deal
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted small">No other items recently viewed.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Related Products Carousel/Grid -->
+    {% if related_products %}
+    <section class="my-5">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h4 class="fw-bold text-dark mb-0">Related <span style="color: var(--primary);">Products</span></h4>
+            <a href="{% url 'shop:product_list' %}?category={{ product.category.slug }}" class="text-decoration-none fw-bold small text-primary">
+                View All <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3">
+            {% for rel in related_products %}
+            <div class="col">
+                <div class="dj-card-v2">
+                    <div class="dj-card-v2-img">
+                        {% if rel.discount_percent > 0 %}
+                            <span class="dj-badge-discount-pct">
+                                {{ rel.discount_percent }}% OFF
+                            </span>
+                        {% endif %}
+                        {% if rel.badge_info %}
+                            <span class="dj-product-badge {{ rel.badge_info.css_class }}">
+                                <i class="{{ rel.badge_info.icon }}"></i> {{ rel.badge_info.label }}
+                            </span>
+                        {% endif %}
+                        <a href="{% url 'shop:product_detail' rel.pk %}">
+                            {% if rel.image %}
+                                <img src="{{ rel.image.url }}" alt="{{ rel.name }}" loading="lazy">
+                            {% else %}
+                                <i class="bi bi-phone fs-1 text-muted"></i>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="dj-card-v2-body">
+                        <span class="dj-product-brand">{{ rel.brand|default:'Brand' }}</span>
+                        <a href="{% url 'shop:product_detail' rel.pk %}" class="dj-card-v2-title">{{ rel.name }}</a>
+                        <div class="dj-price-box">
+                            <span class="dj-offer-price">&#2547; {{ rel.price|floatformat:"0" }}</span>
+                            {% if rel.regular_price and rel.regular_price > rel.price %}
+                                <span class="dj-regular-price">&#2547; {{ rel.regular_price|floatformat:"0" }}</span>
+                            {% endif %}
+                            {% if rel.discount_amount > 0 %}
+                                <span class="dj-discount-pill">&#2547; {{ rel.discount_amount|floatformat:"0" }} OFF</span>
+                            {% endif %}
+                        </div>
+                        <div class="dj-card-v2-actions">
+                            <a href="{% url 'shop:product_detail' rel.pk %}" class="dj-pill-btn">
+                                {% if "18" in rel.name or "17" in rel.name or "S26" in rel.name or "Pixel 10" in rel.name %}
+                                    Pre Order
+                                {% else %}
+                                    Shop Now
+                                {% endif %}
+                            </a>
+
+                            <form action="{% url 'shop:cart_add' rel.pk %}" method="post" class="d-inline m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="dj-icon-btn-cart" title="Add to Cart">
+                                    <i class="bi bi-cart3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+</div>
+
+<!-- PDP Interactive Script: Swatches, Stepper & Buy Now -->
+<script>
+function changeMainImage(src, el) {
+    document.getElementById('main-product-image').src = src;
+    document.querySelectorAll('.gallery-thumb').forEach(t => {
+        t.style.borderColor = '#e5e7eb';
+    });
+    el.style.borderColor = 'var(--primary)';
+}
+
+function selectColor(el, name) {
+    document.querySelectorAll('.dj-swatch-pill').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('selected-color-input').value = name;
+}
+
+function selectRegion(el, name) {
+    document.querySelectorAll('.dj-selector-box:nth-of-type(2) .dj-option-pill').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('selected-region-input').value = name;
+}
+
+function selectStorage(el, name) {
+    document.querySelectorAll('.dj-selector-box:nth-of-type(3) .dj-option-pill').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('selected-storage-input').value = name;
+}
+
+function stepQty(delta) {
+    const input = document.getElementById('pdp-qty-input');
+    let val = parseInt(input.value) || 1;
+    val += delta;
+    if (val < 1) val = 1;
+    if (val > 10) val = 10;
+    input.value = val;
+}
+
+function submitShopNow() {
+    const form = document.getElementById('pdp-purchase-form');
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'buy_now';
+    input.value = '1';
+    form.appendChild(input);
+    form.submit();
+}
+</script>
+{% endblock %}

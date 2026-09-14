@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shopping Cart ({{ cart|length }}) - djCommerce | Official Tech Store{% endblock %}
+
+{% block content %}
+<section class="dj-cart-page">
+    <div class="container">
+
+        <!-- Breadcrumb & Page Header -->
+        <div class="dj-cart-header">
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb small mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'shop:home' %}" class="text-decoration-none text-muted">
+                            <i class="bi bi-house-door me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Shopping Cart</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <h1 class="dj-cart-title mb-0">
+                    Your Shopping Cart
+                    <span class="dj-cart-count-badge">{{ cart|length }} {% if cart|length == 1 %}Item{% else %}Items{% endif %}</span>
+                </h1>
+                <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-plus-lg me-1"></i> Add More Products
+                </a>
+            </div>
+        </div>
+
+        {% if cart|length > 0 %}
+        <!-- Reassurance Badges Strip -->
+        <div class="dj-cart-guarantee-strip d-none d-md-block">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <div class="dj-cart-guarantee-item">
+                        <div class="dj-cart-guarantee-icon"><i class="bi bi-truck"></i></div>
+                        <div>
+                            <div>Fast Nationwide Shipping</div>
+                            <span class="text-muted small fw-normal">24-48h Delivery across BD</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dj-cart-guarantee-item">
+                        <div class="dj-cart-guarantee-icon"><i class="bi bi-patch-check-fill"></i></div>
+                        <div>
+                            <div>100% Genuine Tech</div>
+                            <span class="text-muted small fw-normal">Official brand warranty</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dj-cart-guarantee-item">
+                        <div class="dj-cart-guarantee-icon"><i class="bi bi-credit-card-2-front"></i></div>
+                        <div>
+                            <div>Stripe Encrypted / COD</div>
+                            <span class="text-muted small fw-normal">Bank-grade 256-bit security</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dj-cart-guarantee-item">
+                        <div class="dj-cart-guarantee-icon"><i class="bi bi-arrow-repeat"></i></div>
+                        <div>
+                            <div>7 Days Replacement</div>
+                            <span class="text-muted small fw-normal">Hassle-free return policy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 align-items-start">
+            <!-- Cart Items Table Card -->
+            <div class="col-lg-8">
+                <div class="dj-cart-items-card" id="cart-items-wrapper">
+                    <div class="table-responsive">
+                        <table class="table dj-cart-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th scope="col" style="min-width: 280px;">Item Description</th>
+                                    <th scope="col" class="text-center" style="min-width: 110px;">Unit Price</th>
+                                    <th scope="col" class="text-center" style="min-width: 130px;">Quantity</th>
+                                    <th scope="col" class="text-end" style="min-width: 120px;">Subtotal</th>
+                                    <th scope="col" class="text-center" style="width: 60px;"><span class="visually-hidden">Action</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in cart %}
+                                <tr id="cart-row-{{ item.item_key|default:item.product.id }}">
+                                    <!-- Product Info -->
+                                    <td>
+                                        <div class="dj-cart-product-cell">
+                                            <div class="dj-cart-product-img-wrap">
+                                                {% if item.product.image %}
+                                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                                                {% else %}
+                                                    <i class="bi bi-phone fs-2 text-muted"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <a href="{% url 'shop:product_detail' item.product.id %}" class="dj-cart-product-title">
+                                                    {{ item.product.name }}
+                                                </a>
+                                                <div class="dj-cart-product-meta">
+                                                    {% if item.product.brand %}
+                                                        <span class="dj-cart-pill-brand">{{ item.product.brand }}</span>
+                                                    {% endif %}
+                                                    {% if item.variant %}
+                                                        <span class="dj-cart-pill-variant">
+                                                            <i class="bi bi-gear-fill me-1"></i>{{ item.variant.name }}
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="dj-cart-stock-status">
+                                                    <i class="bi bi-check-circle-fill"></i> In Stock &bull; Official Warranty
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Unit Price -->
+                                    <td class="text-center">
+                                        <div class="dj-cart-unit-price">
+                                            &#2547; {{ item.price|floatformat:"0" }}
+                                        </div>
+                                    </td>
+
+                                    <!-- Quantity Stepper -->
+                                    <td class="text-center">
+                                        <div class="dj-cart-stepper">
+                                            <button type="button" class="cart-qty-btn" data-action="decrease" 
+                                                    data-product-id="{{ item.product.id }}" 
+                                                    data-item-key="{{ item.item_key|default:item.product.id }}" 
+                                                    title="Decrease quantity" aria-label="Decrease Quantity">
+                                                <i class="bi bi-dash-lg"></i>
+                                            </button>
+                                            <input type="text" readonly class="qty-input" 
+                                                   id="cart-qty-{{ item.item_key|default:item.product.id }}" 
+                                                   value="{{ item.quantity }}">
+                                            <button type="button" class="cart-qty-btn" data-action="increase" 
+                                                    data-product-id="{{ item.product.id }}" 
+                                                    data-item-key="{{ item.item_key|default:item.product.id }}" 
+                                                    title="Increase quantity" aria-label="Increase Quantity">
+                                                <i class="bi bi-plus-lg"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+
+                                    <!-- Subtotal -->
+                                    <td class="text-end">
+                                        <div class="dj-cart-line-total" id="cart-subtotal-{{ item.item_key|default:item.product.id }}">
+                                            &#2547; {{ item.total_price|floatformat:"0" }}
+                                        </div>
+                                    </td>
+
+                                    <!-- Delete Button -->
+                                    <td class="text-center">
+                                        <form action="{% url 'shop:cart_remove' item.product.id %}" method="post" class="d-inline" onsubmit="return confirm('Remove {{ item.product.name|escapejs }} from your cart?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="item_key" value="{{ item.item_key|default:item.product.id }}">
+                                            <button type="submit" class="dj-cart-del-btn" title="Remove item from cart">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Footer Toolbar -->
+                    <div class="dj-cart-card-footer">
+                        <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-semibold">
+                            <i class="bi bi-arrow-left me-1"></i> Continue Shopping
+                        </a>
+                        <span class="small text-muted d-none d-sm-inline">
+                            <i class="bi bi-shield-lock text-success me-1"></i> Prices inclusive of official taxes
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary Sticky Card -->
+            <div class="col-lg-4">
+                <div class="dj-cart-summary-card">
+                    <div class="dj-cart-summary-title">
+                        <span>Order Summary</span>
+                        <span class="badge bg-light text-secondary border small fw-normal">{{ cart|length }} Items</span>
+                    </div>
+
+                    <div class="dj-cart-summary-row">
+                        <span>Items Subtotal</span>
+                        <span class="fw-semibold text-dark" id="cart-items-subtotal">&#2547; {{ cart.get_total_price|floatformat:"0" }}</span>
+                    </div>
+
+                    <div class="dj-cart-summary-row">
+                        <span>Estimated Shipping</span>
+                        <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 rounded-pill">FREE DELIVERY</span>
+                    </div>
+
+                    <div class="dj-cart-summary-row">
+                        <span>Estimated Tax / VAT</span>
+                        <span class="text-muted">Included in Price</span>
+                    </div>
+
+                    <div class="dj-cart-summary-row">
+                        <span>Warranty Registration</span>
+                        <span class="text-success fw-semibold"><i class="bi bi-check2 me-1"></i>Complimentary</span>
+                    </div>
+
+                    <!-- Total Amount Display -->
+                    <div class="dj-cart-summary-total">
+                        <div>
+                            <div class="dj-cart-total-label">Grand Total</div>
+                            <span class="text-muted small">Inclusive of all duties</span>
+                        </div>
+                        <div class="dj-cart-total-value" id="cart-grand-total">
+                            &#2547; {{ cart.get_total_price|floatformat:"0" }}
+                        </div>
+                    </div>
+
+                    <!-- Proceed to Checkout Button -->
+                    <a href="{% url 'shop:checkout' %}" class="dj-btn-checkout">
+                        <span>Proceed to Checkout</span>
+                        <i class="bi bi-arrow-right-circle-fill fs-5"></i>
+                    </a>
+
+                    <!-- Security & Supported Gateways -->
+                    <div class="dj-cart-trust-box">
+                        <div class="small fw-semibold text-dark mb-1">
+                            <i class="bi bi-shield-fill-check text-success me-1"></i> 256-Bit SSL Encrypted Checkout
+                        </div>
+                        <p class="small text-muted mb-2">We support all major payment cards and Cash on Delivery.</p>
+                        
+                        <div class="dj-cart-payment-icons">
+                            <div class="dj-cart-pay-badge" title="Visa">
+                                <img src="{% static 'images/payments/visa.png' %}" alt="Visa">
+                            </div>
+                            <div class="dj-cart-pay-badge" title="Mastercard">
+                                <img src="{% static 'images/payments/mastercard.png' %}" alt="Mastercard">
+                            </div>
+                            <div class="dj-cart-pay-badge" title="American Express">
+                                <img src="{% static 'images/payments/amex.png' %}" alt="Amex">
+                            </div>
+                            <div class="dj-cart-pay-badge" title="Apple Pay">
+                                <img src="{% static 'images/payments/apple-pay.png' %}" alt="Apple Pay">
+                            </div>
+                            <div class="dj-cart-pay-badge" title="Google Pay">
+                                <img src="{% static 'images/payments/google-pay.png' %}" alt="Google Pay">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Clean Empty Cart State -->
+        <div class="row justify-content-center py-5">
+            <div class="col-md-7 col-lg-5">
+                <div class="dj-empty-cart-card">
+                    <div class="dj-empty-cart-icon">
+                        <i class="bi bi-bag-x"></i>
+                    </div>
+                    <h2 class="h4 fw-bold text-dark mb-2">Your Shopping Cart is Empty</h2>
+                    <p class="text-muted small mb-4">
+                        Looks like you haven't added any flagship smartphones or gadgets to your cart yet. Explore our latest arrivals and unbeatable deals today.
+                    </p>
+                    <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                        <a href="{% url 'shop:product_list' %}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                            <i class="bi bi-grid-3x3-gap me-2"></i> Browse All Products
+                        </a>
+                        <a href="{% url 'shop:home' %}#best-offers" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                            <i class="bi bi-fire text-danger me-1"></i> View Best Offers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}

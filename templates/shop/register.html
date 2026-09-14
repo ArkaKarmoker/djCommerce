@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create an Account - djCommerce | Official Tech Store{% endblock %}
+
+{% block content %}
+<section class="dj-auth-page">
+    <div class="container">
+        <div class="dj-auth-container dj-auth-container-register">
+            <div class="mb-3">
+                <a href="{% url 'shop:home' %}" class="text-decoration-none text-muted small d-inline-flex align-items-center gap-1 fw-semibold">
+                    <i class="bi bi-arrow-left"></i> Back to Shopping
+                </a>
+            </div>
+
+            <div class="dj-auth-card">
+                <div class="dj-auth-form-wrap">
+                    <div class="mb-3">
+                        <span class="dj-auth-brand-pill">
+                            <i class="bi bi-person-plus-fill"></i> New Membership
+                        </span>
+                        <h1 class="dj-auth-title">Create Account</h1>
+                        <p class="dj-auth-subtitle mb-0">Fill in your information to activate your djCommerce account.</p>
+                    </div>
+
+                        <form method="post" action="{% url 'shop:register' %}">
+                            {% csrf_token %}
+                            
+                            <!-- First Name & Last Name in 2 Columns -->
+                            <div class="row g-3 mb-1">
+                                <div class="col-md-6">
+                                    <div class="dj-auth-field-group">
+                                        <label class="dj-auth-label" for="id_first_name">
+                                            <span>First Name <span class="text-danger">*</span></span>
+                                        </label>
+                                        <div class="dj-auth-input-group {% if form.first_name.errors %}is-invalid{% endif %}">
+                                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                            {{ form.first_name }}
+                                        </div>
+                                        {% if form.first_name.errors %}
+                                            <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="dj-auth-field-group">
+                                        <label class="dj-auth-label" for="id_last_name">
+                                            <span>Last Name <span class="text-danger">*</span></span>
+                                        </label>
+                                        <div class="dj-auth-input-group {% if form.last_name.errors %}is-invalid{% endif %}">
+                                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                            {{ form.last_name }}
+                                        </div>
+                                        {% if form.last_name.errors %}
+                                            <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Username & Phone in 2 Columns -->
+                            <div class="row g-3 mb-1">
+                                <div class="col-md-6">
+                                    <div class="dj-auth-field-group">
+                                        <label class="dj-auth-label" for="id_username">
+                                            <span>Username <span class="text-danger">*</span></span>
+                                        </label>
+                                        <div class="dj-auth-input-group {% if form.username.errors %}is-invalid{% endif %}">
+                                            <span class="input-group-text"><i class="bi bi-at"></i></span>
+                                            {{ form.username }}
+                                        </div>
+                                        {% if form.username.errors %}
+                                            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="dj-auth-field-group">
+                                        <label class="dj-auth-label" for="id_phone">
+                                            <span>Phone Number <span class="text-danger">*</span></span>
+                                        </label>
+                                        <div class="dj-auth-input-group {% if form.phone.errors %}is-invalid{% endif %}">
+                                            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                            {{ form.phone }}
+                                        </div>
+                                        {% if form.phone.errors %}
+                                            <div class="text-danger small mt-1">{{ form.phone.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Email Address -->
+                            <div class="dj-auth-field-group">
+                                <label class="dj-auth-label" for="id_email">
+                                    <span>Email Address <span class="text-danger">*</span></span>
+                                </label>
+                                <div class="dj-auth-input-group {% if form.email.errors %}is-invalid{% endif %}">
+                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                    {{ form.email }}
+                                </div>
+                                {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Password & Confirm Password in 2 Columns -->
+                            <div class="row g-3 mb-1">
+                                <div class="col-md-6">
+                                    <div class="dj-auth-field-group">
+                                        <label class="dj-auth-label" for="id_password">
+                                            <span>Password <span class="text-danger">*</span></span>
+                                        </label>
+                                        <div class="dj-auth-input-group {% if form.password.errors %}is-invalid{% endif %}">
+                                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                            {{ form.password }}
+                                            <button class="dj-pwd-toggle" type="button" data-target="id_password" tabindex="-1" title="Toggle password visibility">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                        {% if form.password.errors %}
+                                            <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="dj-auth-field-group">
+                                        <label class="dj-auth-label" for="id_confirm_password">
+                                            <span>Confirm Password <span class="text-danger">*</span></span>
+                                        </label>
+                                        <div class="dj-auth-input-group {% if form.confirm_password.errors %}is-invalid{% endif %}">
+                                            <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                                            {{ form.confirm_password }}
+                                            <button class="dj-pwd-toggle" type="button" data-target="id_confirm_password" tabindex="-1" title="Toggle password visibility">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                        {% if form.confirm_password.errors %}
+                                            <div class="text-danger small mt-1">{{ form.confirm_password.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-check mb-3 mt-1">
+                                <input class="form-check-input" type="checkbox" id="termsCheck" required checked>
+                                <label class="form-check-label dj-auth-check-label small" for="termsCheck">
+                                    I agree to the djCommerce <a href="javascript:void(0)" class="text-primary fw-bold text-decoration-none">Terms of Service</a> &amp; <a href="javascript:void(0)" class="text-primary fw-bold text-decoration-none">Privacy Policy</a>.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="dj-btn-auth-submit">
+                                <i class="bi bi-person-plus-fill"></i>
+                                <span>Create Free Account</span>
+                                <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+
+                            <div class="dj-auth-switch">
+                                Already have a djCommerce account? 
+                                <a href="{% url 'shop:login' %}" class="dj-auth-switch-link">Sign In</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.dj-pwd-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

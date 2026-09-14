@@ -1,0 +1,9 @@
+django
+pillow
+asgiref
+sqlparse
+tzdata
+stripe
+python-dotenv
+requests
+typing_extensions

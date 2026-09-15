@@ -259,5 +259,7 @@ djCommerce/
 
 ---
 
+Developed for educational purposes. All product brand names belong to their respective trademark holders.
+
 Thank you for taking the time to review the djCommerce project!  
 Developed by [Arka Karmoker](https://github.com/ArkaKarmoker).

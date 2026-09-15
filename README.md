@@ -114,6 +114,8 @@ The repository includes a pre-populated `db.sqlite3` and all product images. Clo
 
 ## 🚀 Installation & Setup
 
+> **Note**: The SQLite database (`db.sqlite3`) and all product/gallery images (`media/` folder) are directly included in this repository. The project is completely pre-populated and ready to run immediately with all 75 products, multi-attribute variants, and demo user accounts out of the box without requiring manual database seeding.
+
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/ArkaKarmoker/djCommerce.git

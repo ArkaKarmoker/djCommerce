@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import uuid
 import stripe
+from decimal import Decimal
 
 from .models import (
     Category, Product, ProductVariant, ProductImage, Customer, Address, Order, Payment, Review,
@@ -712,13 +713,26 @@ def checkout_view(request):
                 for item in cart:
                     line_items.append({
                         'price_data': {
-                            'currency': 'usd',
+                            'currency': 'bdt',
                             'product_data': {
                                 'name': f"{item['product'].name} ({item['variant'].name})" if item.get('variant') else item['product'].name,
                             },
-                            'unit_amount': int(item['price'] * 100),
+                            'unit_amount': int(Decimal(str(item['price'])) * 100),
                         },
                         'quantity': item['quantity'],
+                    })
+
+                shipping_cost = cart.get_shipping_cost()
+                if shipping_cost > 0:
+                    line_items.append({
+                        'price_data': {
+                            'currency': 'bdt',
+                            'product_data': {
+                                'name': 'Standard Delivery (Nationwide Express)',
+                            },
+                            'unit_amount': int(Decimal(str(shipping_cost)) * 100),
+                        },
+                        'quantity': 1,
                     })
 
                 success_url = request.build_absolute_uri(f"/stripe/success/?order_number={order_number}&session_id={{CHECKOUT_SESSION_ID}}")

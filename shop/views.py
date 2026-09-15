@@ -123,14 +123,11 @@ def product_list_view(request):
     if max_price and max_price.isdigit():
         products = products.filter(price__lte=float(max_price))
 
-    # Availability Filter (in_stock, out_of_stock, upcoming)
+    # Availability Filter (in_stock, out_of_stock)
     availability_filter = request.GET.get('availability', '').strip()
     if availability_filter == 'in_stock':
         products = products.filter(quantity__gt=0)
     elif availability_filter == 'out_of_stock':
-        products = products.filter(quantity=0)
-    elif availability_filter == 'upcoming':
-        # Upcoming products have quantity = 0 (not yet available)
         products = products.filter(quantity=0)
 
     # Search Query
@@ -276,7 +273,72 @@ def product_detail_view(request, pk):
     2-column comprehensive specifications table, and "Recently Viewed" sidebar.
     """
     product = get_object_or_404(Product, pk=pk)
-    related_products = list(Product.objects.filter(category=product.category).exclude(id=product.id)[:4])
+
+    # ── Smart Contextual Related Products (Industry Best Practice) ──
+    TARGET_RELATED = 4
+    related_ids = []
+    base_qs = Product.objects.exclude(id=product.id)
+
+    # Level 1: Same Subcategory + Same Brand (Exact Match)
+    if product.brand and product.category:
+        l1_ids = list(base_qs.filter(
+            category=product.category,
+            brand__iexact=product.brand.strip()
+        ).values_list('id', flat=True)[:TARGET_RELATED])
+        for pid in l1_ids:
+            if pid not in related_ids:
+                related_ids.append(pid)
+
+    # Level 2: Same Subcategory + Similar Price Range (±35% of price)
+    if len(related_ids) < TARGET_RELATED and product.category and product.price:
+        min_p = float(product.price) * 0.65
+        max_p = float(product.price) * 1.35
+        needed = TARGET_RELATED - len(related_ids)
+        l2_ids = list(base_qs.exclude(id__in=related_ids).filter(
+            category=product.category,
+            price__gte=min_p,
+            price__lte=max_p
+        ).order_by('-is_featured', '-created_at').values_list('id', flat=True)[:needed])
+        for pid in l2_ids:
+            if pid not in related_ids:
+                related_ids.append(pid)
+
+    # Level 3: Same Subcategory (Any Price)
+    if len(related_ids) < TARGET_RELATED and product.category:
+        needed = TARGET_RELATED - len(related_ids)
+        l3_ids = list(base_qs.exclude(id__in=related_ids).filter(
+            category=product.category
+        ).order_by('-is_featured', '-created_at').values_list('id', flat=True)[:needed])
+        for pid in l3_ids:
+            if pid not in related_ids:
+                related_ids.append(pid)
+
+    # Level 4: Same Parent Category (Sibling Categories)
+    if len(related_ids) < TARGET_RELATED and product.category and product.category.parent:
+        needed = TARGET_RELATED - len(related_ids)
+        l4_ids = list(base_qs.exclude(id__in=related_ids).filter(
+            category__parent=product.category.parent
+        ).order_by('-is_featured', '-created_at').values_list('id', flat=True)[:needed])
+        for pid in l4_ids:
+            if pid not in related_ids:
+                related_ids.append(pid)
+
+    # Level 5: Fallback to Top-Featured or New Arrivals in Catalog
+    if len(related_ids) < TARGET_RELATED:
+        needed = TARGET_RELATED - len(related_ids)
+        l5_ids = list(base_qs.exclude(id__in=related_ids).order_by(
+            '-is_featured', '-created_at'
+        ).values_list('id', flat=True)[:needed])
+        for pid in l5_ids:
+            if pid not in related_ids:
+                related_ids.append(pid)
+
+    # Fetch products preserving rank order
+    if related_ids:
+        products_dict = {p.id: p for p in Product.objects.filter(id__in=related_ids)}
+        related_products = [products_dict[pid] for pid in related_ids if pid in products_dict]
+    else:
+        related_products = []
     new_product_ids = set(Product.objects.all().order_by('-created_at')[:8].values_list('id', flat=True))
     for p in related_products:
         if p.id in new_product_ids:
@@ -305,21 +367,7 @@ def product_detail_view(request, pk):
     reviews = product.reviews.all()
     review_form = ReviewForm()
 
-    # Track recently viewed in session
-    recently_viewed_ids = request.session.get('recently_viewed', [])
-    if pk in recently_viewed_ids:
-        recently_viewed_ids.remove(pk)
-    recently_viewed_ids.insert(0, pk)
-    # Keep top 8
-    request.session['recently_viewed'] = recently_viewed_ids[:8]
 
-    # Retrieve other recently viewed products for sidebar
-    other_viewed_ids = [pid for pid in recently_viewed_ids if pid != pk][:4]
-    recently_viewed = list(Product.objects.filter(id__in=other_viewed_ids))
-    if len(recently_viewed) < 4:
-        # Backfill with popular flagships
-        fillers = Product.objects.exclude(id=pk).exclude(id__in=[p.id for p in recently_viewed])[:4 - len(recently_viewed)]
-        recently_viewed.extend(fillers)
 
     # Color definitions and options
     color_map = {
@@ -406,7 +454,6 @@ def product_detail_view(request, pk):
         'storages': storages,
         'specs_list': specs_list,
         'sku_code': sku_code,
-        'recently_viewed': recently_viewed,
         'reviews': reviews,
         'review_form': review_form,
     }
@@ -476,6 +523,7 @@ def cart_add_view(request, product_id):
             'message': f'"{item_title}" added to cart successfully!',
             'cart_count': len(cart),
             'cart_total': str(cart.get_total_price()),
+            'cart_url': reverse('shop:cart_detail'),
         })
 
     messages.success(request, f'"{item_title}" added to cart successfully!')
@@ -829,20 +877,38 @@ def order_success_view(request, order_number):
 
 def order_lookup_view(request):
     """
-    Track orders by order number.
+    Track orders by order reference number (e.g. DJ-B4627791).
     """
     order_number = request.GET.get('order_number', '').strip()
+    phone = request.GET.get('phone', '').strip()
     orders = None
+    customer = None
+    first_order = None
+    total_amount = 0
+    searched = bool(order_number or phone)
 
     if order_number:
-        orders = Order.objects.filter(order_number=order_number).order_by('-order_date')
-        if not orders.exists():
-            messages.info(request, f"No orders found for order number '{order_number}'.")
-            orders = None
+        orders = Order.objects.filter(order_number__iexact=order_number).order_by('-order_date')
+        if orders.exists():
+            first_order = orders.first()
+            customer = first_order.customer
+            total_amount = sum(o.total_price for o in orders)
+    elif phone:
+        customer = Customer.objects.filter(phone=phone).first()
+        if customer:
+            orders = Order.objects.filter(customer=customer).order_by('-order_date')
+            if orders.exists():
+                first_order = orders.first()
+                total_amount = sum(o.total_price for o in orders)
 
     context = {
         'order_number': order_number,
+        'phone': phone,
+        'customer': customer,
         'orders': orders,
+        'first_order': first_order,
+        'total_amount': total_amount,
+        'searched': searched,
     }
     return render(request, 'shop/order_lookup.html', context)
 

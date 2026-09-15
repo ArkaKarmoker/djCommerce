@@ -227,14 +227,15 @@
 
                         <!-- Action Row: Pill Button + Cart Icon -->
                         <div class="dj-card-v2-actions">
-                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn">
-                                {% if "18" in product.name or "17" in product.name or "S26" in product.name or "Pixel 10" in product.name %}
-                                    Pre Order
-                                {% else %}
+                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn {% if not product.in_stock %}opacity-75{% endif %}">
+                                {% if product.in_stock %}
                                     Shop Now
+                                {% else %}
+                                    Out of Stock
                                 {% endif %}
                             </a>
 
+                            {% if product.in_stock %}
                             <form action="{% url 'shop:cart_add' product.pk %}" method="post" class="d-inline m-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="quantity" value="1">
@@ -242,6 +243,11 @@
                                     <i class="bi bi-cart3"></i>
                                 </button>
                             </form>
+                            {% else %}
+                            <button type="button" class="dj-icon-btn-cart disabled opacity-50" title="Out of Stock" disabled>
+                                <i class="bi bi-slash-circle"></i>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -316,14 +322,15 @@
 
                         <!-- Action Row: Pill Button + Cart Icon -->
                         <div class="dj-card-v2-actions">
-                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn">
-                                {% if "18" in product.name or "17" in product.name or "S26" in product.name or "Pixel 10" in product.name %}
-                                    Pre Order
-                                {% else %}
+                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn {% if not product.in_stock %}opacity-75{% endif %}">
+                                {% if product.in_stock %}
                                     Shop Now
+                                {% else %}
+                                    Out of Stock
                                 {% endif %}
                             </a>
 
+                            {% if product.in_stock %}
                             <form action="{% url 'shop:cart_add' product.pk %}" method="post" class="d-inline m-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="quantity" value="1">
@@ -331,6 +338,11 @@
                                     <i class="bi bi-cart3"></i>
                                 </button>
                             </form>
+                            {% else %}
+                            <button type="button" class="dj-icon-btn-cart disabled opacity-50" title="Out of Stock" disabled>
+                                <i class="bi bi-slash-circle"></i>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -407,14 +419,15 @@
 
                         <!-- Action Row: Pill Button + Cart Icon -->
                         <div class="dj-card-v2-actions">
-                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn">
-                                {% if "18" in product.name or "17" in product.name or "S26" in product.name or "Pixel 10" in product.name %}
-                                    Pre Order
-                                {% else %}
+                            <a href="{% url 'shop:product_detail' product.pk %}" class="dj-pill-btn {% if not product.in_stock %}opacity-75{% endif %}">
+                                {% if product.in_stock %}
                                     Shop Now
+                                {% else %}
+                                    Out of Stock
                                 {% endif %}
                             </a>
 
+                            {% if product.in_stock %}
                             <form action="{% url 'shop:cart_add' product.pk %}" method="post" class="d-inline m-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="quantity" value="1">
@@ -422,6 +435,11 @@
                                     <i class="bi bi-cart3"></i>
                                 </button>
                             </form>
+                            {% else %}
+                            <button type="button" class="dj-icon-btn-cart disabled opacity-50" title="Out of Stock" disabled>
+                                <i class="bi bi-slash-circle"></i>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

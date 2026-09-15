@@ -85,7 +85,7 @@
                             <span class="dj-pdp-regular-price">&#2547; {{ product.regular_price|floatformat:"0" }}</span>
                         {% endif %}
                         <span class="dj-pdp-divider">|</span>
-                        <span>Availability: <span class="dj-pdp-instock">{% if product.in_stock %}In Stock{% else %}<span class="text-danger">Pre Order</span>{% endif %}</span></span>
+                        <span>Availability: <span class="dj-pdp-instock">{% if product.in_stock %}In Stock{% else %}<span class="text-danger">Out of Stock</span>{% endif %}</span></span>
                         <span class="dj-pdp-divider">|</span>
                         <span class="dj-pdp-code">Code: {{ sku_code }}</span>
                     </div>
@@ -191,7 +191,7 @@
         
         <!-- Left: Specifications, Description & Reviews -->
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card dj-pdp-panel-card overflow-hidden">
                 
                 <!-- Tab Headers -->
                 <div class="card-header bg-white border-bottom p-3">
@@ -199,11 +199,6 @@
                         <li class="nav-item">
                             <button class="nav-link active fw-bold rounded-pill px-4" id="specs-tab" data-bs-toggle="pill" data-bs-target="#specs-pane" type="button">
                                 Specification
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link fw-bold rounded-pill px-4" id="desc-tab" data-bs-toggle="pill" data-bs-target="#desc-pane" type="button">
-                                Description
                             </button>
                         </li>
                         <li class="nav-item">
@@ -230,14 +225,6 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
-                        </div>
-
-                        <!-- Description Pane -->
-                        <div class="tab-pane fade" id="desc-pane">
-                            <h5 class="fw-bold mb-3">{{ product.name }} Overview</h5>
-                            <div class="text-secondary lh-lg">
-                                {{ product.description|safe }}
-                            </div>
                         </div>
 
                         <!-- Reviews Pane -->
@@ -303,28 +290,20 @@
 
         <!-- Right: Recently Viewed Sidebar -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4">
-                <h5 class="fw-bold mb-3 text-dark">Recently Viewed</h5>
-                {% for item in recently_viewed %}
-                <div class="dj-recent-card">
-                    {% if item.image %}
-                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="dj-recent-thumb">
-                    {% else %}
-                        <div class="dj-recent-thumb d-flex align-items-center justify-content-center bg-light rounded">
-                            <i class="bi bi-phone text-muted"></i>
-                        </div>
-                    {% endif %}
-                    <div class="flex-grow-1 min-w-0">
-                        <a href="{% url 'shop:product_detail' item.pk %}" class="dj-recent-title">{{ item.name }}</a>
-                        <div class="dj-recent-price">&#2547; {{ item.price|floatformat:"0" }}</div>
-                        <a href="{% url 'shop:product_detail' item.pk %}" class="badge bg-light text-dark border text-decoration-none mt-1">
-                            View Deal
-                        </a>
-                    </div>
+            <div class="card dj-pdp-panel-card p-4 sticky-lg-top" style="top: 90px; z-index: 10;">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold mb-0 text-dark">Recently Viewed</h5>
+                    <button type="button" id="dj-clear-recent-btn" class="btn btn-sm text-muted p-0 text-decoration-none d-none" style="font-size: 0.78rem;" onclick="clearRecentlyViewed()">
+                        <i class="bi bi-trash3 me-1"></i>Clear
+                    </button>
                 </div>
-                {% empty %}
-                <p class="text-muted small">No other items recently viewed.</p>
-                {% endfor %}
+                <div id="dj-recently-viewed-list">
+                    <!-- Injected dynamically via LocalStorage -->
+                </div>
+                <div id="dj-recently-viewed-empty" class="text-center py-4 text-muted small">
+                    <i class="bi bi-clock-history fs-3 d-block mb-2 text-muted opacity-50"></i>
+                    <span>No other items recently viewed yet.</span>
+                </div>
             </div>
         </div>
 
@@ -376,14 +355,15 @@
                             {% endif %}
                         </div>
                         <div class="dj-card-v2-actions">
-                            <a href="{% url 'shop:product_detail' rel.pk %}" class="dj-pill-btn">
-                                {% if "18" in rel.name or "17" in rel.name or "S26" in rel.name or "Pixel 10" in rel.name %}
-                                    Pre Order
-                                {% else %}
+                            <a href="{% url 'shop:product_detail' rel.pk %}" class="dj-pill-btn {% if not rel.in_stock %}opacity-75{% endif %}">
+                                {% if rel.in_stock %}
                                     Shop Now
+                                {% else %}
+                                    Out of Stock
                                 {% endif %}
                             </a>
 
+                            {% if rel.in_stock %}
                             <form action="{% url 'shop:cart_add' rel.pk %}" method="post" class="d-inline m-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="quantity" value="1">
@@ -391,6 +371,11 @@
                                     <i class="bi bi-cart3"></i>
                                 </button>
                             </form>
+                            {% else %}
+                            <button type="button" class="dj-icon-btn-cart disabled opacity-50" title="Out of Stock" disabled>
+                                <i class="bi bi-slash-circle"></i>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -448,5 +433,72 @@ function submitShopNow() {
     form.appendChild(input);
     form.submit();
 }
+
+// ── LocalStorage Dynamic "Recently Viewed" Tracker ────────────────
+(function initRecentlyViewed() {
+    const STORAGE_KEY = 'dj_recently_viewed_products';
+    const currentProduct = {
+        id: {{ product.id }},
+        name: "{{ product.name|escapejs }}",
+        price: "{{ product.price|floatformat:'0' }}",
+        image: "{% if product.image %}{{ product.image.url|escapejs }}{% endif %}",
+        url: "{% url 'shop:product_detail' product.pk %}"
+    };
+
+    let items = [];
+    try {
+        items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        if (!Array.isArray(items)) items = [];
+    } catch (e) {
+        items = [];
+    }
+
+    // Filter out current product to display ONLY other items viewed before
+    const otherItems = items.filter(p => p && p.id && p.id !== currentProduct.id).slice(0, 4);
+
+    const listContainer = document.getElementById('dj-recently-viewed-list');
+    const emptyState = document.getElementById('dj-recently-viewed-empty');
+    const clearBtn = document.getElementById('dj-clear-recent-btn');
+
+    if (otherItems.length > 0) {
+        emptyState.classList.add('d-none');
+        clearBtn.classList.remove('d-none');
+        listContainer.innerHTML = otherItems.map(item => `
+            <div class="dj-recent-card" onclick="window.location.href='${item.url}'" style="cursor: pointer;">
+                <a href="${item.url}" class="d-inline-flex align-items-center justify-content-center flex-shrink-0 text-decoration-none" onclick="event.stopPropagation();">
+                    ${item.image ? 
+                        `<img src="${item.image}" alt="${item.name}" class="dj-recent-thumb" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'dj-recent-thumb d-flex align-items-center justify-content-center bg-light rounded\\'><i class=\\'bi bi-phone text-muted\\'></i></div>';">` :
+                        `<div class="dj-recent-thumb d-flex align-items-center justify-content-center bg-light rounded"><i class="bi bi-phone text-muted"></i></div>`
+                    }
+                </a>
+                <div class="flex-grow-1 min-w-0">
+                    <a href="${item.url}" class="dj-recent-title text-truncate d-block mb-1" onclick="event.stopPropagation();">${item.name}</a>
+                    <div class="dj-recent-price">&#2547; ${item.price}</div>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        emptyState.classList.remove('d-none');
+        clearBtn.classList.add('d-none');
+        listContainer.innerHTML = '';
+    }
+
+    // Update storage: prepend current product, deduplicate, keep last 10
+    const updatedItems = [currentProduct, ...items.filter(p => p && p.id && p.id !== currentProduct.id)].slice(0, 10);
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedItems));
+    } catch (e) {
+        console.warn('LocalStorage unavailable:', e);
+    }
+
+    window.clearRecentlyViewed = function() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify([currentProduct]));
+        } catch (e) {}
+        listContainer.innerHTML = '';
+        emptyState.classList.remove('d-none');
+        clearBtn.classList.add('d-none');
+    };
+})();
 </script>
 {% endblock %}

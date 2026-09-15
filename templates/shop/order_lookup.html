@@ -1,110 +1,193 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Track Your Order - djCommerce{% endblock %}
+{% block title %}Track Your Order - djCommerce | Official Tech Store{% endblock %}
 
 {% block content %}
 <div class="container py-4">
 
     <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
+    <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb small">
-            <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none">
+                    <i class="bi bi-house-door me-1"></i>Home
+                </a>
+            </li>
             <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Track Order</li>
         </ol>
     </nav>
 
     <div class="row justify-content-center">
-        <div class="col-lg-7 col-md-9">
+        <div class="col-lg-8 col-md-10">
+
+            <!-- Heading -->
             <div class="text-center mb-4">
-                <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle mb-3" style="width: 64px; height: 64px;">
-                    <i class="bi bi-truck fs-2 text-primary"></i>
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-truck fs-2"></i>
                 </div>
-                <h1 class="h3 fw-bold text-dark">Track Your Order</h1>
-                <p class="text-muted small">Enter your order number to check the current status and details of your order.</p>
+                <h1 class="h3 fw-bold text-dark mb-0">Track Your Order</h1>
             </div>
 
-            <!-- Lookup Form (Navbar-like rounded search) -->
-            <form method="get" action="{% url 'shop:order_lookup' %}" class="dj-search-form mx-auto mb-4" style="max-width: 500px;">
-                <input class="dj-search-input" type="text" name="order_number"
-                    placeholder="Enter order number (e.g. DJ-CC63ADBC)"
-                    value="{{ order_number }}" required autocomplete="off">
-                <button class="dj-search-btn" type="submit" aria-label="Track Order">
-                    <i class="bi bi-search fs-6"></i>
-                </button>
-            </form>
+            <!-- Standalone Large Rounded Search Bar -->
+            <div class="mb-5">
+                <form method="get" action="{% url 'shop:order_lookup' %}" class="position-relative" style="max-width: 680px; margin: 0 auto;">
+                    <input 
+                        type="text" 
+                        name="order_number" 
+                        class="form-control" 
+                        placeholder="Enter Order ID (e.g. DJ-B4627791)..." 
+                        value="{{ order_number }}" 
+                        required 
+                        autocomplete="off"
+                        style="height: 58px; font-size: 1.05rem; border-radius: 9999px; padding-left: 1.75rem; padding-right: 4.5rem; border: 1.5px solid #d1d5db; background-color: #ffffff; box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08); transition: all 0.2s ease;"
+                        onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 4px rgba(37, 99, 235, 0.15), 0 4px 20px -2px rgba(15, 23, 42, 0.1)';"
+                        onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='0 4px 20px -2px rgba(15, 23, 42, 0.08)';">
+                    <button 
+                        type="submit" 
+                        class="btn btn-primary d-flex align-items-center justify-content-center" 
+                        title="Track Order"
+                        style="position: absolute; right: 5px; top: 5px; bottom: 5px; width: 48px; height: 48px; border-radius: 9999px; border: none; background: var(--primary-gradient); color: #ffffff; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);">
+                        <i class="bi bi-search fs-5"></i>
+                    </button>
+                </form>
+                <div class="text-center mt-2.5">
+                    <span class="text-muted" style="font-size: 0.8rem;">
+                        <i class="bi bi-info-circle me-1"></i> You can find your Order ID in your dashboard or invoice email.
+                    </span>
+                </div>
+            </div>
 
-            <!-- Results -->
+            <!-- Results Section -->
             {% if orders %}
-            <div class="card border-0 rounded-4 shadow-sm overflow-hidden">
-                <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-receipt-cutoff text-primary"></i>
-                        <h5 class="fw-bold mb-0 text-dark small">Order #{{ order_number }}</h5>
+            <div class="card border rounded-4 shadow-sm mb-4 overflow-hidden" style="border-color: #e2e8f0 !important;">
+                <!-- Header Banner -->
+                <div class="card-header bg-white border-bottom p-3.5 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="small text-muted fw-semibold">Order ID:</span>
+                            <code class="fs-6 fw-bold text-dark">{{ first_order.order_number }}</code>
+                        </div>
+                        <div class="small text-muted mt-0.5">
+                            Placed on {{ first_order.order_date|date:"d M Y, h:i A" }}
+                        </div>
                     </div>
-                    <span class="dj-cart-count-badge">{{ orders.count }} Item{{ orders.count|pluralize }}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="dj-status-pill status-{{ first_order.status|lower }} px-3 py-1.5 fs-6 fw-bold">
+                            <span class="dj-status-dot"></span>
+                            {{ first_order.status }}
+                        </span>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr class="small text-uppercase text-secondary fw-bold">
-                                    <th>Product</th>
-                                    <th class="text-center">Qty</th>
-                                    <th class="text-end">Total</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for order in orders %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            {% if order.product.image %}
-                                                <img src="{{ order.product.image.url }}" alt="{{ order.product.name }}" class="rounded bg-light border p-1" style="width: 40px; height: 40px; object-fit: contain;">
-                                            {% endif %}
-                                            <div>
-                                                <span class="fw-semibold text-dark small">{{ order.product.name }}</span>
-                                                {% if order.variant %}
-                                                    <div class="text-muted" style="font-size: 0.72rem;">{{ order.variant.name }}</div>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-center fw-semibold">{{ order.quantity }}</td>
-                                    <td class="text-end fw-bold text-dark">&#2547; {{ order.total_price|floatformat:"0" }}</td>
-                                    <td>
-                                        {% if order.status == 'Delivered' %}
-                                            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">{{ order.status }}</span>
-                                        {% elif order.status == 'Shipped' %}
-                                            <span class="badge bg-info-subtle text-info rounded-pill px-2 py-1 small">{{ order.status }}</span>
-                                        {% elif order.status == 'Cancelled' %}
-                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1 small">{{ order.status }}</span>
-                                        {% else %}
-                                            <span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1 small">{{ order.status }}</span>
+
+                <!-- Order Details & Customer Info -->
+                <div class="card-body p-3.5 border-bottom bg-light bg-opacity-50">
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Customer Name</div>
+                            <div class="fw-semibold text-dark">{{ first_order.customer.get_full_name|default:first_order.customer.name }}</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Payment Method</div>
+                            <div class="fw-semibold text-dark">{{ first_order.payment_method }}</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Total Amount</div>
+                            <div class="fw-bold text-primary fs-6">&#2547; {{ total_amount|floatformat:"0" }}</div>
+                        </div>
+                        {% if first_order.delivery_address %}
+                        <div class="col-12 border-top pt-2 mt-2">
+                            <div class="small text-muted">Delivery Address</div>
+                            <div class="small text-dark fw-medium">{{ first_order.delivery_address.address_line }}, {{ first_order.delivery_address.city }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Products in this Order -->
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr class="small text-uppercase text-secondary fw-bold">
+                                <th>Item</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ord in orders %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        {% if ord.product.image %}
+                                            <img src="{{ ord.product.image.url }}" alt="{{ ord.product.name }}" class="rounded bg-light border p-1" style="width: 46px; height: 46px; object-fit: contain;">
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="fw-semibold text-dark small">{{ order.order_date|date:"d M Y" }}</div>
-                                        <div class="text-muted" style="font-size: 0.72rem;">{{ order.order_date|time:"h:i A" }}</div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                        <div>
+                                            <a href="{% url 'shop:product_detail' ord.product.id %}" class="small fw-bold text-dark text-decoration-none d-block">
+                                                {{ ord.product.name }}
+                                            </a>
+                                            {% if ord.variant %}
+                                                <span class="badge bg-light text-secondary border small py-0 mt-0.5">{{ ord.variant.name }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center fw-semibold text-dark">{{ ord.quantity }}</td>
+                                <td class="text-end text-muted small">&#2547; {{ ord.product.price|floatformat:"0" }}</td>
+                                <td class="text-end fw-bold text-dark">&#2547; {{ ord.total_price|floatformat:"0" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer with Actions -->
+                <div class="card-footer bg-white border-top p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <span class="small text-muted">
+                        Showing {{ orders|length }} item{{ orders|length|pluralize }} in this shipment
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'shop:dashboard' %}#orders" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold">
+                            <i class="bi bi-arrow-left me-1"></i> My Orders
+                        </a>
+                        <a href="{% url 'shop:order_detail' first_order.order_number %}" class="btn btn-sm btn-primary rounded-pill px-3.5 fw-bold text-white shadow-sm">
+                            <i class="bi bi-file-earmark-text me-1"></i> Full Invoice
+                        </a>
+                        {% else %}
+                        <a href="{% url 'shop:order_success' first_order.order_number %}" class="btn btn-sm btn-primary rounded-pill px-3.5 fw-bold text-white shadow-sm">
+                            <i class="bi bi-file-earmark-text me-1"></i> View Receipt
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
-            {% elif order_number %}
-            <div class="text-center py-5">
-                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 70px; height: 70px;">
-                    <i class="bi bi-inbox fs-2 text-muted"></i>
+
+            {% elif searched %}
+            <!-- Not Found State -->
+            <div class="card border-0 rounded-4 shadow-sm p-4 text-center mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-danger-subtle text-danger rounded-circle mb-3" style="width: 64px; height: 64px; margin: 0 auto;">
+                    <i class="bi bi-search fs-2"></i>
                 </div>
-                <h6 class="fw-bold text-dark">No Order Found</h6>
-                <p class="text-muted small mb-0">No orders found for order number <code class="fw-bold">{{ order_number }}</code>. Please check and try again.</p>
+                <h5 class="fw-bold text-dark mb-1">No Order Found</h5>
+                <p class="text-muted small mb-3" style="max-width: 420px; margin: 0 auto;">
+                    We couldn't find any orders matching <strong>"{{ order_number }}"</strong>. Please verify your order reference and try again.
+                </p>
+                <div>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'shop:dashboard' %}#orders" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-speedometer2 me-1"></i> Check Dashboard Orders
+                    </a>
+                    {% else %}
+                    <a href="{% url 'shop:home' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-house me-1"></i> Return Home
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
+
         </div>
     </div>
 </div>

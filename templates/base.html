@@ -258,7 +258,14 @@
                     </button>
                 </div>
                 <div class="dj-toast-body">
-                    {{ message }}
+                    <div>{{ message }}</div>
+                    {% if "added to cart" in message|lower or "cart" in message|lower and "added" in message|lower %}
+                    <div>
+                        <a href="{% url 'shop:cart_detail' %}" class="dj-toast-action-btn">
+                            <i class="bi bi-cart-check-fill"></i> View Cart
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             <div class="dj-toast-progress">
@@ -342,6 +349,7 @@
                 <div class="col-lg-2 col-6">
                     <h5>Quick Links</h5>
                     <ul class="dj-footer-links">
+                        <li><a href="#">About Us</a></li>
                         <li><a href="#">Terms of Service</a></li>
                         <li><a href="#">Privacy Policy</a></li>
                         <li><a href="#">Refund &amp; Return Policy</a></li>
@@ -869,13 +877,18 @@
         }
 
         // Global dynamic toast helper for client-side / AJAX actions
-        window.showToast = function(message, type = 'success', title = '') {
+        window.showToast = function(message, type = 'success', title = '', actionUrl = null, actionText = 'View Cart') {
             let container = document.getElementById('dj-toast-container');
             if (!container) {
                 container = document.createElement('div');
                 container.id = 'dj-toast-container';
                 container.className = 'dj-toast-container';
                 document.body.appendChild(container);
+            }
+
+            // Auto-detect View Cart button for cart-related notifications if not explicitly passed
+            if (!actionUrl && (title.toLowerCase().includes('cart') || (message && message.toLowerCase().includes('cart') && message.toLowerCase().includes('added')))) {
+                actionUrl = "{% url 'shop:cart_detail' %}";
             }
 
             const typeIcons = {
@@ -914,7 +927,10 @@
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
-                    <div class="dj-toast-body">${message}</div>
+                    <div class="dj-toast-body">
+                        <div>${message}</div>
+                        ${actionUrl ? `<div><a href="${actionUrl}" class="dj-toast-action-btn"><i class="bi bi-cart-check-fill"></i> ${actionText}</a></div>` : ''}
+                    </div>
                 </div>
                 <div class="dj-toast-progress">
                     <div class="dj-toast-progress-bar"></div>
@@ -1025,7 +1041,7 @@
 
                 // 2. Trigger Modern Floating Toast Notification
                 if (window.showToast) {
-                    window.showToast(data.message || 'Item added to cart successfully!', 'success', 'Added to Cart');
+                    window.showToast(data.message || 'Item added to cart successfully!', 'success', 'Added to Cart', data.cart_url || "{% url 'shop:cart_detail' %}", 'View Cart');
                 }
             })
             .catch(err => {

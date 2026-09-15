@@ -13,7 +13,6 @@
 
 **djCommerce** is a responsive, full-featured Single-Vendor E-Commerce platform specializing in premium smartphones, tablets, smartwatches, audio devices, and tech accessories. Built with **Django 6.1**, **Bootstrap 5.3.3**, and **Vanilla JavaScript ES6+**, it includes **75 branded products** with multi-dimensional variant pricing (`Color | Storage | Region`), multi-angle image galleries, session-based cart, dual payment gateways (**Stripe** and **Cash on Delivery**), customer dashboard, and a fully customized Django Admin suite.
 
-Developed per the requirements in [`Assignment_Single_Vendor_Ecommerce_Images.md`](./Assignment_Single_Vendor_Ecommerce_Images.md), satisfying all mandatory requirements plus bonus features.
 
 ---
 

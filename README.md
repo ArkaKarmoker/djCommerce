@@ -277,6 +277,55 @@ djCommerce/
 
 ---
 
+## 🖼️ Screenshots
+
+Home Page:
+<img width="1763" alt="Screenshot_16-9-2026_34917_127 0 0 1" src="https://github.com/user-attachments/assets/a1d7b482-28a2-44be-9d1a-87d932e7c9ea" />
+
+Product Page:
+<img width="1763" height="3490" alt="image" src="https://github.com/user-attachments/assets/aa6609a4-2d01-4f05-8d73-ec4b7049e8a4" />
+
+Product Details Page:
+<img width="1763" height="3199" alt="image" src="https://github.com/user-attachments/assets/c95359c3-731a-4bcc-b0fd-3c161d3b7387" />
+
+Cart Page:
+<img width="1763" height="1558" alt="image" src="https://github.com/user-attachments/assets/6c971c4e-7bdb-481d-80dc-35f0005644fd" />
+
+Checkout Page:
+<img width="1763" height="2334" alt="image" src="https://github.com/user-attachments/assets/ae99cc48-4db7-4bbd-b932-fb8088b757da" />
+
+Stripe Payment Page:
+<img width="1147" height="953" alt="image" src="https://github.com/user-attachments/assets/c0458db2-099c-465d-b4bd-3a97dc80c682" />
+
+Order Placed Successfully:
+<img width="1763" height="2075" alt="image" src="https://github.com/user-attachments/assets/8dd37df7-9654-4b28-99ce-4a4e688f44ad" />
+
+Printing Invoice:
+<img width="1550" height="1031" alt="image" src="https://github.com/user-attachments/assets/0950ed76-92ac-4f5d-b399-052f24c8a1cb" />
+
+User Dashboard:
+<img width="1763" height="1426" alt="image" src="https://github.com/user-attachments/assets/a496a2c0-d55d-4e00-be69-b8e9094e1bda" />
+
+Order History:
+<img width="1763" height="1652" alt="image" src="https://github.com/user-attachments/assets/cda85825-ddc5-488c-be55-f58f86dd0d0d" />
+
+Order Details Page:
+<img width="1763" height="2201" alt="image" src="https://github.com/user-attachments/assets/054861cb-8e30-4489-b236-798240cd5502" />
+
+User Address Book:
+<img width="1763" height="1349" alt="image" src="https://github.com/user-attachments/assets/0259f310-49e8-4a1a-8ad2-47fdb6c2f130" />
+
+User Account Change Password Page:
+<img width="1763" height="1349" alt="image" src="https://github.com/user-attachments/assets/e02fcc74-9fa3-4cb4-a6be-5a7dd662233f" />
+
+Category with Subcategories:
+<img width="1748" height="642" alt="image" src="https://github.com/user-attachments/assets/1f8aaf98-d62f-441e-920f-2f971f0b3e41" />
+
+Realtime Product Search:
+<img width="1765" height="772" alt="image" src="https://github.com/user-attachments/assets/a619389e-46a6-4167-a35c-bed51e57be58" />
+
+---
+
 Developed for educational purposes. All product brand names belong to their respective trademark holders.
 
 Thank you for taking the time to review the djCommerce project!  

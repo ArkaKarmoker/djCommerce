@@ -202,40 +202,57 @@ erDiagram
 
 ```text
 djCommerce/
-├── core/                    # Django project settings & root URL routing
-├── media/
-│   ├── products/            # Main product images
-│   ├── product_images/      # Gallery images
-│   └── profile/             # Customer avatars
-├── shop/
-│   ├── migrations/
-│   ├── admin.py             # TinyMCE, inline gallery, custom UserAdmin
-│   ├── cart.py              # Session-based variant-aware cart
-│   ├── context_processors.py
-│   ├── forms.py             # Checkout, Register, Review, Profile
-│   ├── models.py            # Product, Variant, Order, Customer, Review, etc.
-│   ├── tests.py             # 13 unit tests
-│   ├── urls.py
-│   └── views.py             # Catalog, cart, checkout, dashboard views
-├── static/
-│   ├── css/style.css        # Custom design tokens & storefront styles
-│   └── js/main.js           # Toast, cart AJAX, variant logic
-├── templates/
-│   ├── base.html            # Sticky navbar, footer, toast system
-│   └── shop/
-│       ├── home.html
-│       ├── product_list.html
-│       ├── product_detail.html
-│       ├── cart_detail.html
-│       ├── checkout.html
-│       ├── order_success.html
-│       ├── dashboard.html
-│       └── invoice.html
-├── .env.example
-├── db.sqlite3               # Pre-populated (75 products, 371 variants)
-├── manage.py
-├── README.md
-└── requirements.txt
+├── core/                        # Django project configurations
+│   ├── settings.py              # App settings, Stripe, TinyMCE, sessions
+│   ├── urls.py                  # Root URL configuration
+│   ├── wsgi.py                  # WSGI web server interface
+│   └── asgi.py                  # ASGI async server interface
+├── media/                       # Uploaded media assets
+│   ├── products/                # Primary product showcase images
+│   ├── product_images/          # Multi-angle gallery images
+│   └── profile/                 # Customer profile avatars
+├── shop/                        # Main e-commerce application
+│   ├── admin.py                 # TinyMCE 6, ProductVariantInline, UserAdmin
+│   ├── apps.py                  # App configuration
+│   ├── cart.py                  # Session-based variant-aware shopping cart
+│   ├── context_processors.py    # Global cart counter & category tree
+│   ├── forms.py                 # Email login, register, checkout, review forms
+│   ├── models.py                # Product, Variant, Order, Customer, Category
+│   ├── tests.py                 # 13 automated unit test cases
+│   ├── urls.py                  # Shop route endpoints
+│   ├── views.py                 # Catalog, PDP, cart, checkout, dashboard views
+│   ├── management/              # Custom Django management commands
+│   │   └── commands/            # Seed categories & import commands
+│   └── migrations/              # Database schema migrations
+├── static/                      # Static CSS, JS & image assets
+│   ├── css/
+│   │   ├── admin_custom.css     # Custom Django Admin panel styling
+│   │   └── style.css            # Storefront design tokens & UI styles
+│   ├── images/                  # Banners, logos, and payment method icons
+│   └── js/
+│       ├── admin_tinymce.js     # TinyMCE WYSIWYG editor initializer
+│       └── main.js              # Toast notifications, cart AJAX, quantity stepper
+├── templates/                   # Django HTML templates
+│   ├── base.html                # Master layout with navbar, footer & toast
+│   └── shop/                    # Storefront views
+│       ├── home.html            # Homepage (Hero, featured, new, deals, contact)
+│       ├── product_list.html    # Product catalog with filter sidebar & sorting
+│       ├── product_detail.html  # Product details with variant selector & specs
+│       ├── cart.html            # Shopping cart overview
+│       ├── checkout.html        # Checkout with Stripe & COD selectors
+│       ├── order_success.html   # Order confirmation page
+│       ├── order_detail.html    # Order tracking & item details
+│       ├── order_invoice.html   # Printable formal order invoice
+│       ├── order_lookup.html    # Public order tracking by number
+│       ├── dashboard.html       # Customer portal & order history
+│       ├── login.html           # Customer email-based login
+│       └── register.html        # Customer registration
+├── .env.example                 # Environment variables template
+├── .gitignore                   # Git ignore configuration
+├── db.sqlite3                   # Pre-populated database (75 products, 371 variants)
+├── manage.py                    # Django management script
+├── README.md                    # Project documentation
+└── requirements.txt             # Top-level dependencies with explicit versions
 ```
 
 ---

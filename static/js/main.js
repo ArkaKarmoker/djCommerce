@@ -64,13 +64,49 @@ function showToast(message, type = 'success') {
 }
 
 /**
+ * Format currency to remove unnecessary .00 decimal when integer
+ */
+function formatCartCurrency(val) {
+    const num = parseFloat(val);
+    if (isNaN(num)) return val;
+    return (num % 1 === 0) ? Math.round(num).toString() : num.toFixed(2);
+}
+
+/**
  * Update cart badge numbers across the page
  */
 function updateCartBadge(count) {
-    const badges = document.querySelectorAll('.cart-count-pill');
+    const badges = document.querySelectorAll('.cart-count-pill, .dj-badge-counter, .dj-mobile-cart-count');
     badges.forEach(badge => {
         badge.textContent = count;
     });
+
+    // Update cart page header count badge ("X Items" / "1 Item")
+    const headerCount = document.getElementById('cart-header-count');
+    if (headerCount) {
+        headerCount.textContent = `${count} ${count === 1 ? 'Item' : 'Items'}`;
+    }
+
+    // Update order summary count badge ("X Items" / "1 Item")
+    const summaryCount = document.getElementById('cart-summary-count');
+    if (summaryCount) {
+        summaryCount.textContent = `${count} ${count === 1 ? 'Item' : 'Items'}`;
+    }
+
+    // Update modal count if present
+    const modalCount = document.getElementById('cart-modal-count');
+    if (modalCount) {
+        modalCount.textContent = count;
+    }
+    const modalItemWord = document.getElementById('cart-modal-item-word');
+    if (modalItemWord) {
+        modalItemWord.textContent = count === 1 ? 'item' : 'items';
+    }
+
+    // Update document title if on cart page (e.g. Shopping Cart (3) - djCommerce)
+    if (document.title.includes('Shopping Cart')) {
+        document.title = document.title.replace(/\(\d+\)/, `(${count})`);
+    }
 }
 
 /**
@@ -98,11 +134,7 @@ function initCartQuantitySteppers() {
             currentQty -= 1;
         }
 
-        if (currentQty <= 0) {
-            if (!confirm("Are you sure you want to remove this item from your cart?")) {
-                return;
-            }
-        }
+
 
         // Post update via AJAX
         try {
@@ -129,18 +161,23 @@ function initCartQuantitySteppers() {
                     input.value = data.item_quantity;
                     const subtotalElem = document.getElementById(`cart-subtotal-${itemKey}`);
                     if (subtotalElem) {
-                        subtotalElem.textContent = `৳ ${data.item_subtotal}`;
+                        subtotalElem.textContent = `৳ ${formatCartCurrency(data.item_subtotal)}`;
                     }
                 }
 
-                // Update summary total
-                const grandTotalElem = document.getElementById('cart-grand-total');
-                if (grandTotalElem) {
-                    grandTotalElem.textContent = `৳ ${data.cart_total}`;
-                }
+                // Update summary subtotal & grand total
                 const itemsSubtotalElem = document.getElementById('cart-items-subtotal');
                 if (itemsSubtotalElem) {
-                    itemsSubtotalElem.textContent = `৳ ${data.cart_total}`;
+                    itemsSubtotalElem.textContent = `৳ ${formatCartCurrency(data.cart_subtotal || data.cart_total)}`;
+                }
+                const shippingCostElem = document.getElementById('cart-shipping-cost');
+                if (shippingCostElem && data.shipping_cost !== undefined) {
+                    shippingCostElem.textContent = `৳ ${formatCartCurrency(data.shipping_cost)}`;
+                }
+                const grandTotalElem = document.getElementById('cart-grand-total');
+                if (grandTotalElem) {
+                    grandTotalElem.textContent = `৳ ${formatCartCurrency(data.cart_total)}`;
+                    grandTotalElem.style.whiteSpace = 'nowrap';
                 }
 
                 updateCartBadge(data.cart_count);

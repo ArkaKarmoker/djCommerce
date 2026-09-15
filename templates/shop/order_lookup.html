@@ -4,47 +4,54 @@
 {% block title %}Track Your Order - djCommerce{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-4">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Track Order</li>
+        </ol>
+    </nav>
+
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-7 col-md-9">
             <div class="text-center mb-4">
-                <h1 class="h3 fw-bold">Track Your Order History</h1>
-                <p class="text-muted">Enter your registered mobile phone number to check your past and pending orders.</p>
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-truck fs-2 text-primary"></i>
+                </div>
+                <h1 class="h3 fw-bold text-dark">Track Your Order</h1>
+                <p class="text-muted small">Enter your order number to check the current status and details of your order.</p>
             </div>
 
-            <!-- Lookup Form -->
-            <div class="card border rounded-4 shadow-sm p-4 mb-4">
-                <form method="get" action="{% url 'shop:order_lookup' %}" class="row g-2 align-items-center">
-                    <div class="col-sm-9">
-                        <div class="input-group">
-                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-telephone text-muted"></i></span>
-                            <input type="text" name="phone" class="form-control border-start-0" placeholder="Enter phone number (e.g. 01712345678)" value="{{ phone }}" required>
-                        </div>
-                    </div>
-                    <div class="col-sm-3">
-                        <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill">
-                            <i class="bi bi-search me-1"></i> Track
-                        </button>
-                    </div>
-                </form>
-            </div>
+            <!-- Lookup Form (Navbar-like rounded search) -->
+            <form method="get" action="{% url 'shop:order_lookup' %}" class="dj-search-form mx-auto mb-4" style="max-width: 500px;">
+                <input class="dj-search-input" type="text" name="order_number"
+                    placeholder="Enter order number (e.g. DJ-CC63ADBC)"
+                    value="{{ order_number }}" required autocomplete="off">
+                <button class="dj-search-btn" type="submit" aria-label="Track Order">
+                    <i class="bi bi-search fs-6"></i>
+                </button>
+            </form>
 
             <!-- Results -->
             {% if orders %}
-            <div class="card border rounded-4 shadow-sm">
+            <div class="card border-0 rounded-4 shadow-sm overflow-hidden">
                 <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Order History for {{ customer.name }}</h5>
-                    <span class="badge bg-primary rounded-pill">{{ orders.count }} Order{{ orders.count|pluralize }}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-receipt-cutoff text-primary"></i>
+                        <h5 class="fw-bold mb-0 text-dark small">Order #{{ order_number }}</h5>
+                    </div>
+                    <span class="dj-cart-count-badge">{{ orders.count }} Item{{ orders.count|pluralize }}</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
-                                <tr>
-                                    <th>Order Reference</th>
+                                <tr class="small text-uppercase text-secondary fw-bold">
                                     <th>Product</th>
-                                    <th>Qty</th>
-                                    <th>Total</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end">Total</th>
                                     <th>Status</th>
                                     <th>Date</th>
                                 </tr>
@@ -52,26 +59,36 @@
                             <tbody>
                                 {% for order in orders %}
                                 <tr>
-                                    <td class="font-monospace fw-bold text-primary small">
-                                        <a href="{% url 'shop:order_success' order.order_number %}" class="text-decoration-none">
-                                            {{ order.order_number }}
-                                        </a>
-                                    </td>
                                     <td>
-                                        <span class="fw-semibold text-dark">{{ order.product.name }}</span>
+                                        <div class="d-flex align-items-center gap-3">
+                                            {% if order.product.image %}
+                                                <img src="{{ order.product.image.url }}" alt="{{ order.product.name }}" class="rounded bg-light border p-1" style="width: 40px; height: 40px; object-fit: contain;">
+                                            {% endif %}
+                                            <div>
+                                                <span class="fw-semibold text-dark small">{{ order.product.name }}</span>
+                                                {% if order.variant %}
+                                                    <div class="text-muted" style="font-size: 0.72rem;">{{ order.variant.name }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td>{{ order.quantity }}</td>
-                                    <td class="fw-bold">${{ order.total_price }}</td>
+                                    <td class="text-center fw-semibold">{{ order.quantity }}</td>
+                                    <td class="text-end fw-bold text-dark">&#2547; {{ order.total_price|floatformat:"0" }}</td>
                                     <td>
                                         {% if order.status == 'Delivered' %}
-                                            <span class="badge bg-success-subtle text-success">{{ order.status }}</span>
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">{{ order.status }}</span>
                                         {% elif order.status == 'Shipped' %}
-                                            <span class="badge bg-info-subtle text-info">{{ order.status }}</span>
+                                            <span class="badge bg-info-subtle text-info rounded-pill px-2 py-1 small">{{ order.status }}</span>
+                                        {% elif order.status == 'Cancelled' %}
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1 small">{{ order.status }}</span>
                                         {% else %}
-                                            <span class="badge bg-warning-subtle text-warning">{{ order.status }}</span>
+                                            <span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1 small">{{ order.status }}</span>
                                         {% endif %}
                                     </td>
-                                    <td class="small text-muted">{{ order.order_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark small">{{ order.order_date|date:"d M Y" }}</div>
+                                        <div class="text-muted" style="font-size: 0.72rem;">{{ order.order_date|time:"h:i A" }}</div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -79,10 +96,13 @@
                     </div>
                 </div>
             </div>
-            {% elif phone %}
-            <div class="text-center py-4 text-muted">
-                <i class="bi bi-inbox fs-1"></i>
-                <p class="mt-2">No previous orders found for this phone number.</p>
+            {% elif order_number %}
+            <div class="text-center py-5">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 70px; height: 70px;">
+                    <i class="bi bi-inbox fs-2 text-muted"></i>
+                </div>
+                <h6 class="fw-bold text-dark">No Order Found</h6>
+                <p class="text-muted small mb-0">No orders found for order number <code class="fw-bold">{{ order_number }}</code>. Please check and try again.</p>
             </div>
             {% endif %}
         </div>

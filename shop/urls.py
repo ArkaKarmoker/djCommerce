@@ -9,12 +9,14 @@ urlpatterns = [
     path('products/', views.product_list_view, name='product_list'),
     path('products/<int:pk>/', views.product_detail_view, name='product_detail'),
     path('products/<int:product_id>/review/', views.add_review_view, name='add_review'),
+    path('api/search-suggest/', views.search_suggest_view, name='search_suggest'),
 
     # Cart
     path('cart/', views.cart_detail_view, name='cart_detail'),
     path('cart/add/<int:product_id>/', views.cart_add_view, name='cart_add'),
     path('cart/update/<int:product_id>/', views.cart_update_view, name='cart_update'),
     path('cart/remove/<int:product_id>/', views.cart_remove_view, name='cart_remove'),
+    path('cart/clear/', views.cart_clear_view, name='cart_clear'),
 
     # Checkout & Orders
     path('checkout/', views.checkout_view, name='checkout'),

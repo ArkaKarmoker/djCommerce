@@ -23,11 +23,18 @@
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                 <h1 class="dj-cart-title mb-0">
                     Your Shopping Cart
-                    <span class="dj-cart-count-badge">{{ cart|length }} {% if cart|length == 1 %}Item{% else %}Items{% endif %}</span>
+                    <span class="dj-cart-count-badge" id="cart-header-count">{{ cart|length }} {% if cart|length == 1 %}Item{% else %}Items{% endif %}</span>
                 </h1>
-                <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
-                    <i class="bi bi-plus-lg me-1"></i> Add More Products
-                </a>
+                <div class="d-flex align-items-center gap-2">
+                    {% if cart|length > 0 %}
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold dj-delete-all-btn" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                        <i class="bi bi-trash3 me-1.5"></i> Delete All
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+                        <i class="bi bi-plus-lg me-1"></i> Add More Products
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -160,7 +167,7 @@
 
                                     <!-- Delete Button -->
                                     <td class="text-center">
-                                        <form action="{% url 'shop:cart_remove' item.product.id %}" method="post" class="d-inline" onsubmit="return confirm('Remove {{ item.product.name|escapejs }} from your cart?');">
+                                        <form action="{% url 'shop:cart_remove' item.product.id %}" method="post" class="d-inline">
                                             {% csrf_token %}
                                             <input type="hidden" name="item_key" value="{{ item.item_key|default:item.product.id }}">
                                             <button type="submit" class="dj-cart-del-btn" title="Remove item from cart">
@@ -175,10 +182,15 @@
                     </div>
 
                     <!-- Footer Toolbar -->
-                    <div class="dj-cart-card-footer">
-                        <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-semibold">
-                            <i class="bi bi-arrow-left me-1"></i> Continue Shopping
-                        </a>
+                    <div class="dj-cart-card-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-semibold">
+                                <i class="bi bi-arrow-left me-1"></i> Continue Shopping
+                            </a>
+                            <button type="button" class="btn btn-outline-danger rounded-pill btn-sm px-3 fw-semibold dj-delete-all-btn" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                                <i class="bi bi-trash3 me-1.5"></i> Delete All
+                            </button>
+                        </div>
                         <span class="small text-muted d-none d-sm-inline">
                             <i class="bi bi-shield-lock text-success me-1"></i> Prices inclusive of official taxes
                         </span>
@@ -191,7 +203,7 @@
                 <div class="dj-cart-summary-card">
                     <div class="dj-cart-summary-title">
                         <span>Order Summary</span>
-                        <span class="badge bg-light text-secondary border small fw-normal">{{ cart|length }} Items</span>
+                        <span class="dj-cart-count-badge" id="cart-summary-count">{{ cart|length }} {% if cart|length == 1 %}Item{% else %}Items{% endif %}</span>
                     </div>
 
                     <div class="dj-cart-summary-row">
@@ -201,7 +213,7 @@
 
                     <div class="dj-cart-summary-row">
                         <span>Estimated Shipping</span>
-                        <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 rounded-pill">FREE DELIVERY</span>
+                        <span class="fw-semibold text-dark" id="cart-shipping-cost">&#2547; {{ cart.get_shipping_cost|floatformat:"0" }}</span>
                     </div>
 
                     <div class="dj-cart-summary-row">
@@ -211,18 +223,16 @@
 
                     <div class="dj-cart-summary-row">
                         <span>Warranty Registration</span>
-                        <span class="text-success fw-semibold"><i class="bi bi-check2 me-1"></i>Complimentary</span>
+                        <span class="text-success fw-semibold"><i class="bi bi-check2 me-1"></i>Included</span>
                     </div>
 
                     <!-- Total Amount Display -->
                     <div class="dj-cart-summary-total">
-                        <div>
-                            <div class="dj-cart-total-label">Grand Total</div>
-                            <span class="text-muted small">Inclusive of all duties</span>
+                        <div class="min-w-0" style="flex: 1 1 auto;">
+                            <div class="dj-cart-total-label" style="white-space: nowrap;">Grand Total</div>
+                            <span class="text-muted" style="font-size: 0.76rem; display: block; line-height: 1.25; white-space: nowrap;">Incl. VAT & shipping</span>
                         </div>
-                        <div class="dj-cart-total-value" id="cart-grand-total">
-                            &#2547; {{ cart.get_total_price|floatformat:"0" }}
-                        </div>
+                        <div class="dj-cart-total-value" id="cart-grand-total" style="white-space: nowrap !important; flex-shrink: 0;">&#2547; {{ cart.get_grand_total|floatformat:"0" }}</div>
                     </div>
 
                     <!-- Proceed to Checkout Button -->
@@ -233,26 +243,34 @@
 
                     <!-- Security & Supported Gateways -->
                     <div class="dj-cart-trust-box">
-                        <div class="small fw-semibold text-dark mb-1">
-                            <i class="bi bi-shield-fill-check text-success me-1"></i> 256-Bit SSL Encrypted Checkout
+                        <div class="small fw-semibold text-dark mb-2">
+                            <i class="bi bi-shield-fill-check text-success me-1"></i> Secure Stripe Payment
                         </div>
-                        <p class="small text-muted mb-2">We support all major payment cards and Cash on Delivery.</p>
                         
                         <div class="dj-cart-payment-icons">
                             <div class="dj-cart-pay-badge" title="Visa">
-                                <img src="{% static 'images/payments/visa.png' %}" alt="Visa">
+                                <img src="{% static 'images/payments/visa.png' %}" alt="Visa" loading="lazy">
                             </div>
                             <div class="dj-cart-pay-badge" title="Mastercard">
-                                <img src="{% static 'images/payments/mastercard.png' %}" alt="Mastercard">
+                                <img src="{% static 'images/payments/mastercard.png' %}" alt="Mastercard" loading="lazy">
                             </div>
                             <div class="dj-cart-pay-badge" title="American Express">
-                                <img src="{% static 'images/payments/amex.png' %}" alt="Amex">
+                                <img src="{% static 'images/payments/amex.png' %}" alt="American Express" loading="lazy">
                             </div>
-                            <div class="dj-cart-pay-badge" title="Apple Pay">
-                                <img src="{% static 'images/payments/apple-pay.png' %}" alt="Apple Pay">
+                            <div class="dj-cart-pay-badge" title="JCB">
+                                <img src="{% static 'images/payments/jcb.png' %}" alt="JCB" loading="lazy">
                             </div>
-                            <div class="dj-cart-pay-badge" title="Google Pay">
-                                <img src="{% static 'images/payments/google-pay.png' %}" alt="Google Pay">
+                            <div class="dj-cart-pay-badge" title="Diners Club">
+                                <img src="{% static 'images/payments/dinersclub.png' %}" alt="Diners Club" loading="lazy">
+                            </div>
+                            <div class="dj-cart-pay-badge dj-wallet-card" title="Apple Pay">
+                                <img src="{% static 'images/payments/apple-pay.png' %}" alt="Apple Pay" loading="lazy">
+                            </div>
+                            <div class="dj-cart-pay-badge dj-wallet-card" title="Google Pay">
+                                <img src="{% static 'images/payments/google-pay.png' %}" alt="Google Pay" loading="lazy">
+                            </div>
+                            <div class="dj-cart-pay-badge" title="Stripe">
+                                <img src="{% static 'images/payments/stripe.png' %}" alt="Stripe" loading="lazy">
                             </div>
                         </div>
                     </div>
@@ -287,4 +305,34 @@
 
     </div>
 </section>
+
+{% if cart|length > 0 %}
+<!-- Clear All Items Confirmation Modal -->
+<div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-body text-center p-4">
+                <div class="dj-modal-icon-danger mx-auto mb-3">
+                    <i class="bi bi-trash3-fill"></i>
+                </div>
+                <h4 class="modal-title fw-bold text-dark mb-2" id="deleteAllModalLabel">Delete All Items?</h4>
+                <p class="text-secondary small mb-4">
+                    Are you sure you want to clear your shopping cart? All <strong id="cart-modal-count">{{ cart|length }}</strong> <span id="cart-modal-item-word">{% if cart|length == 1 %}item{% else %}items{% endif %}</span> will be removed. This cannot be undone.
+                </p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-semibold text-secondary flex-grow-1" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <form action="{% url 'shop:cart_clear' %}" method="post" class="m-0 flex-grow-1">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger rounded-pill px-4 py-2 fw-semibold w-100 shadow-sm" id="btn-confirm-delete-all">
+                            <i class="bi bi-trash3 me-1"></i> Yes, Delete All
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

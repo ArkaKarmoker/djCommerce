@@ -35,14 +35,49 @@
     <!-- Breadcrumb & Header -->
     <nav aria-label="breadcrumb" class="mb-2">
         <ol class="breadcrumb small">
-            <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}" class="text-secondary text-decoration-none">Mobile Phone</a></li>
-            {% if selected_brand %}
-                <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_brand }}</li>
-            {% elif selected_category %}
-                <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_category.name }}</li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none">Home</a>
+            </li>
+            {% if selected_category %}
+                {% if selected_category.parent %}
+                    {# Subcategory view: Home / Category Name / Subcategory Name #}
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'shop:product_list' %}?category={{ selected_category.parent.slug }}" class="text-secondary text-decoration-none">{{ selected_category.parent.name }}</a>
+                    </li>
+                    {% if selected_brand %}
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'shop:product_list' %}?category={{ selected_category.slug }}" class="text-secondary text-decoration-none">{{ selected_category.name }}</a>
+                        </li>
+                        <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_brand }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_category.name }}</li>
+                    {% endif %}
+                {% else %}
+                    {# Category view: Home / Category Name #}
+                    {% if selected_brand %}
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'shop:product_list' %}?category={{ selected_category.slug }}" class="text-secondary text-decoration-none">{{ selected_category.name }}</a>
+                        </li>
+                        <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_brand }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_category.name }}</li>
+                    {% endif %}
+                {% endif %}
             {% else %}
-                <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">All Phones</li>
+                {# All Products view: Home / All Products #}
+                {% if selected_brand %}
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'shop:product_list' %}" class="text-secondary text-decoration-none">All Products</a>
+                    </li>
+                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ selected_brand }}</li>
+                {% elif query %}
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'shop:product_list' %}" class="text-secondary text-decoration-none">All Products</a>
+                    </li>
+                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Search: "{{ query }}"</li>
+                {% else %}
+                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">All Products</li>
+                {% endif %}
             {% endif %}
         </ol>
     </nav>
@@ -84,109 +119,128 @@
 
                     <!-- Filter 0: Category & Subcategories -->
                     <div class="dj-filter-group">
-                        <div class="dj-filter-title">
+                        <div class="dj-filter-title" role="button" aria-expanded="true" data-filter-target="filter-content-categories">
                             <span>Categories</span>
-                            <i class="bi bi-chevron-down text-muted small"></i>
+                            <i class="bi bi-chevron-down dj-filter-title-chevron text-muted small"></i>
                         </div>
-                        <div class="dj-filter-list">
-                            {% for parent in nav_parent_categories %}
-                            <div class="mb-2">
-                                <a href="{% url 'shop:product_list' %}?category={{ parent.slug }}" class="d-flex align-items-center justify-content-between text-decoration-none fw-bold small {% if selected_category.slug == parent.slug or selected_category.parent.slug == parent.slug %}text-primary{% else %}text-dark{% endif %}">
-                                    <span><i class="bi {{ parent.icon }} me-1.5 text-primary"></i> {{ parent.name }}</span>
-                                    <i class="bi bi-chevron-right small text-muted"></i>
-                                </a>
-                                {% if selected_category.slug == parent.slug or selected_category.parent.slug == parent.slug %}
-                                <div class="ps-3 mt-1.5 border-start border-2 border-primary">
-                                    {% for sub in parent.subcategories.all %}
-                                    <a href="{% url 'shop:product_list' %}?category={{ sub.slug }}" class="d-block py-1 small text-decoration-none {% if selected_category.slug == sub.slug %}fw-bold text-primary{% else %}text-secondary{% endif %}">
-                                        {{ sub.name }}
-                                    </a>
-                                    {% endfor %}
+                        <div id="filter-content-categories" class="dj-filter-content">
+                            <div class="dj-filter-list dj-category-filter-list">
+                                {% for parent in nav_parent_categories %}
+                                <div class="dj-category-item mb-1">
+                                    <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded-2 dj-category-row {% if selected_category.slug == parent.slug or selected_category.parent.slug == parent.slug %}is-active{% endif %}">
+                                        <a href="{% url 'shop:product_list' %}?category={{ parent.slug }}" class="d-flex align-items-center text-decoration-none fw-semibold small flex-grow-1 {% if selected_category.slug == parent.slug or selected_category.parent.slug == parent.slug %}text-primary fw-bold{% else %}text-dark{% endif %} dj-cat-link">
+                                            <i class="bi {{ parent.icon|default:'bi-grid' }} me-2 text-primary fs-6"></i>
+                                            <span>{{ parent.name }}</span>
+                                        </a>
+                                        {% if parent.subcategories.all %}
+                                        <button type="button" 
+                                                class="btn btn-sm p-1 border-0 dj-subcat-toggle-btn text-muted shadow-none" 
+                                                data-target="#subcat-list-{{ parent.id }}" 
+                                                aria-expanded="{% if selected_category.slug == parent.slug or selected_category.parent.slug == parent.slug %}true{% else %}false{% endif %}"
+                                                aria-label="Toggle {{ parent.name }} subcategories">
+                                            <i class="bi bi-chevron-right dj-chevron-icon small text-muted"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    {% if parent.subcategories.all %}
+                                    <div id="subcat-list-{{ parent.id }}" class="dj-subcat-collapse ps-3 mt-1 border-start border-2 border-primary ms-2 {% if selected_category.slug == parent.slug or selected_category.parent.slug == parent.slug %}show{% endif %}">
+                                        {% for sub in parent.subcategories.all %}
+                                        <a href="{% url 'shop:product_list' %}?category={{ sub.slug }}" class="d-block py-1 small text-decoration-none dj-subcat-link {% if selected_category.slug == sub.slug %}fw-bold text-primary active-sub{% else %}text-secondary{% endif %}">
+                                            {{ sub.name }}
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
+                                {% endfor %}
                             </div>
-                            {% endfor %}
                         </div>
                     </div>
 
                     <!-- Filter 1: Price Range (Dual Slider) -->
                     <div class="dj-filter-group">
-                        <div class="dj-filter-title">
+                        <div class="dj-filter-title" role="button" aria-expanded="true" data-filter-target="filter-content-price">
                             <span>Price Range</span>
-                            <i class="bi bi-chevron-down text-muted small"></i>
+                            <i class="bi bi-chevron-down dj-filter-title-chevron text-muted small"></i>
                         </div>
-                        <div class="dj-price-slider-wrap">
-                            <div class="dj-price-slider-track" id="price-slider-track">
-                                <div class="dj-price-slider-range" id="price-slider-range"></div>
-                                <input type="range" class="dj-range-input dj-range-min" id="price-range-min"
-                                       min="0" max="300000" step="500" value="{{ min_price|default:'0' }}">
-                                <input type="range" class="dj-range-input dj-range-max" id="price-range-max"
-                                       min="0" max="300000" step="500" value="{{ max_price|default:'300000' }}">
-                            </div>
-                            <div class="dj-price-values">
-                                <div class="dj-price-val-box">
-                                    <span class="dj-price-val-label">Min</span>
-                                    <span class="dj-price-val" id="price-val-min">৳{{ min_price|default:'0' }}</span>
+                        <div id="filter-content-price" class="dj-filter-content">
+                            <div class="dj-price-slider-wrap">
+                                <div class="dj-price-slider-track" id="price-slider-track">
+                                    <div class="dj-price-slider-range" id="price-slider-range"></div>
+                                    <input type="range" class="dj-range-input dj-range-min" id="price-range-min"
+                                           min="0" max="300000" step="500" value="{{ min_price|default:'0' }}">
+                                    <input type="range" class="dj-range-input dj-range-max" id="price-range-max"
+                                           min="0" max="300000" step="500" value="{{ max_price|default:'300000' }}">
                                 </div>
-                                <div class="dj-price-val-box">
-                                    <span class="dj-price-val-label">Max</span>
-                                    <span class="dj-price-val" id="price-val-max">৳{{ max_price|default:'300000' }}</span>
+                                <div class="dj-price-values">
+                                    <div class="dj-price-val-box">
+                                        <span class="dj-price-val-label">Min</span>
+                                        <span class="dj-price-val" id="price-val-min">৳{{ min_price|default:'0' }}</span>
+                                    </div>
+                                    <div class="dj-price-val-box">
+                                        <span class="dj-price-val-label">Max</span>
+                                        <span class="dj-price-val" id="price-val-max">৳{{ max_price|default:'300000' }}</span>
+                                    </div>
                                 </div>
+                                <input type="hidden" name="min_price" id="hidden-min-price" value="{{ min_price|default:'' }}">
+                                <input type="hidden" name="max_price" id="hidden-max-price" value="{{ max_price|default:'' }}">
+                                <button type="submit" class="dj-price-apply-btn" id="price-apply-btn">
+                                    <i class="bi bi-funnel-fill me-1"></i> Apply Price
+                                </button>
                             </div>
-                            <input type="hidden" name="min_price" id="hidden-min-price" value="{{ min_price|default:'' }}">
-                            <input type="hidden" name="max_price" id="hidden-max-price" value="{{ max_price|default:'' }}">
-                            <button type="submit" class="dj-price-apply-btn" id="price-apply-btn">
-                                <i class="bi bi-funnel-fill me-1"></i> Apply Price
-                            </button>
                         </div>
                     </div>
 
                     <!-- Filter 2: Availability -->
                     <div class="dj-filter-group">
-                        <div class="dj-filter-title">
+                        <div class="dj-filter-title" role="button" aria-expanded="true" data-filter-target="filter-content-availability">
                             <span>Availability</span>
-                            <i class="bi bi-chevron-down text-muted small"></i>
+                            <i class="bi bi-chevron-down dj-filter-title-chevron text-muted small"></i>
                         </div>
-                        <div class="dj-filter-list">
-                            <label class="dj-filter-item">
-                                <input type="radio" name="availability" value="" class="dj-filter-checkbox" {% if not availability_filter %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
-                                <span>All</span>
-                            </label>
-                            <label class="dj-filter-item">
-                                <input type="radio" name="availability" value="in_stock" class="dj-filter-checkbox" {% if availability_filter == 'in_stock' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
-                                <span>In Stock</span>
-                            </label>
-                            <label class="dj-filter-item">
-                                <input type="radio" name="availability" value="out_of_stock" class="dj-filter-checkbox" {% if availability_filter == 'out_of_stock' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
-                                <span>Out of Stock</span>
-                            </label>
-                            <label class="dj-filter-item">
-                                <input type="radio" name="availability" value="upcoming" class="dj-filter-checkbox" {% if availability_filter == 'upcoming' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
-                                <span>Upcoming</span>
-                            </label>
+                        <div id="filter-content-availability" class="dj-filter-content">
+                            <div class="dj-filter-list">
+                                <label class="dj-filter-item">
+                                    <input type="radio" name="availability" value="" class="dj-filter-checkbox" {% if not availability_filter %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                    <span>All</span>
+                                </label>
+                                <label class="dj-filter-item">
+                                    <input type="radio" name="availability" value="in_stock" class="dj-filter-checkbox" {% if availability_filter == 'in_stock' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                    <span>In Stock</span>
+                                </label>
+                                <label class="dj-filter-item">
+                                    <input type="radio" name="availability" value="out_of_stock" class="dj-filter-checkbox" {% if availability_filter == 'out_of_stock' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                    <span>Out of Stock</span>
+                                </label>
+                                <label class="dj-filter-item">
+                                    <input type="radio" name="availability" value="upcoming" class="dj-filter-checkbox" {% if availability_filter == 'upcoming' %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                    <span>Upcoming</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Filter 4: Brand -->
                     <div class="dj-filter-group">
-                        <div class="dj-filter-title">
+                        <div class="dj-filter-title" role="button" aria-expanded="true" data-filter-target="filter-content-brand">
                             <span>Brand</span>
-                            <i class="bi bi-chevron-down text-muted small"></i>
+                            <i class="bi bi-chevron-down dj-filter-title-chevron text-muted small"></i>
                         </div>
-                        <div class="dj-filter-list">
-                            {% for b in available_brands %}
-                            <label class="dj-filter-item">
-                                <input type="radio" name="brand" value="{{ b }}" class="dj-filter-checkbox" {% if selected_brand == b %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
-                                <span>{{ b }}</span>
-                            </label>
-                            {% endfor %}
-                            {% if selected_brand %}
-                            <label class="dj-filter-item text-primary fw-semibold mt-1">
-                                <a href="{% url 'shop:product_list' %}{% if selected_category %}?category={{ selected_category.slug }}{% endif %}" class="text-decoration-none small">
-                                    &times; Clear Brand
-                                </a>
-                            </label>
-                            {% endif %}
+                        <div id="filter-content-brand" class="dj-filter-content">
+                            <div class="dj-filter-list">
+                                {% for b in available_brands %}
+                                <label class="dj-filter-item">
+                                    <input type="radio" name="brand" value="{{ b }}" class="dj-filter-checkbox" {% if selected_brand == b %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                    <span>{{ b }}</span>
+                                </label>
+                                {% endfor %}
+                                {% if selected_brand %}
+                                <label class="dj-filter-item text-primary fw-semibold mt-1">
+                                    <a href="{% url 'shop:product_list' %}{% if selected_category %}?category={{ selected_category.slug }}{% endif %}" class="text-decoration-none small">
+                                        &times; Clear Brand
+                                    </a>
+                                </label>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
@@ -399,5 +453,51 @@ function applySort(val) {
     url.searchParams.set('page', '1');
     window.location.href = url.toString();
 }
+
+/* ── Realtime Category Subcategory Accordion Toggle ─────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Subcategory toggles
+    const toggleButtons = document.querySelectorAll('.dj-subcat-toggle-btn');
+    toggleButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const targetSelector = this.getAttribute('data-target');
+            if (!targetSelector) return;
+            const targetElem = document.querySelector(targetSelector);
+            if (!targetElem) return;
+
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            if (isExpanded) {
+                this.setAttribute('aria-expanded', 'false');
+                targetElem.classList.remove('show');
+            } else {
+                this.setAttribute('aria-expanded', 'true');
+                targetElem.classList.add('show');
+            }
+        });
+    });
+
+    // 2. Filter groups collapse/expand (Categories, Price Range, Availability, Brand)
+    const filterTitles = document.querySelectorAll('.dj-filter-title');
+    filterTitles.forEach(title => {
+        title.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('data-filter-target');
+            if (!targetId) return;
+            const targetElem = document.getElementById(targetId);
+            if (!targetElem) return;
+
+            const isCurrentlyExpanded = this.getAttribute('aria-expanded') !== 'false';
+            if (isCurrentlyExpanded) {
+                this.setAttribute('aria-expanded', 'false');
+                targetElem.classList.add('collapsed');
+            } else {
+                this.setAttribute('aria-expanded', 'true');
+                targetElem.classList.remove('collapsed');
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

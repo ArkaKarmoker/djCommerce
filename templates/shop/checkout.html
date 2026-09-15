@@ -225,7 +225,7 @@
                     <button type="submit" class="dj-btn-checkout-submit" id="checkout-submit-btn">
                         <span class="btn-text d-flex align-items-center justify-content-center gap-2">
                             <i class="bi bi-shield-lock-fill fs-5"></i>
-                            <span>Confirm Order &bull; &#2547; {{ cart.get_total_price|floatformat:"0" }}</span>
+                            <span>Confirm Order &bull; &#2547; {{ cart.get_grand_total|floatformat:"0" }}</span>
                         </span>
                         <span class="btn-loading d-none align-items-center justify-content-center gap-2">
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -257,8 +257,8 @@
             <div class="dj-checkout-summary-card">
                 <div class="dj-checkout-summary-title">
                     <span>Order Summary</span>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small">
-                        {{ cart|length }} {% if cart|length == 1 %}item{% else %}items{% endif %}
+                    <span class="dj-cart-count-badge">
+                        {{ cart|length }} {% if cart|length == 1 %}Item{% else %}Items{% endif %}
                     </span>
                 </div>
 
@@ -297,22 +297,22 @@
 
                 <div class="dj-checkout-summary-row">
                     <span>Delivery Charges</span>
-                    <span class="text-success fw-bold">FREE Delivery</span>
+                    <span class="fw-semibold text-dark">&#2547; {{ cart.get_shipping_cost|floatformat:"0" }}</span>
                 </div>
 
                 <div class="dj-checkout-summary-row">
                     <span>Official Warranty</span>
-                    <span class="text-secondary small">Included</span>
+                    <span class="text-success fw-semibold"><i class="bi bi-check2 me-1"></i>Included</span>
                 </div>
 
                 <!-- Total Highlight Box -->
                 <div class="dj-checkout-total-box">
                     <div>
                         <div class="dj-checkout-total-label">Total Payable</div>
-                        <div class="small text-muted" style="font-size: 0.78rem;">All taxes included</div>
+                        <div class="small text-muted" style="font-size: 0.78rem;">All taxes & shipping included</div>
                     </div>
                     <div class="dj-checkout-total-value">
-                        &#2547; {{ cart.get_total_price|floatformat:"0" }}
+                        &#2547; {{ cart.get_grand_total|floatformat:"0" }}
                     </div>
                 </div>
 

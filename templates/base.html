@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <!-- Custom CSS (djCommerce Theme) -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3.0">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3.6">
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -101,13 +101,15 @@
                     </div>
 
                     <!-- Centered Search Bar Pill -->
-                    <form class="dj-search-form d-none d-md-block" action="{% url 'shop:product_list' %}" method="get">
+                    <form class="dj-search-form d-none d-md-block" action="{% url 'shop:product_list' %}" method="get" id="desktopSearchForm">
                         <input class="dj-search-input" type="search" name="q" id="main-search-input"
                             placeholder="Search product, brand, model... (Press '/' to focus)"
                             value="{{ request.GET.q|default:'' }}" autocomplete="off">
                         <button class="dj-search-btn" type="submit" aria-label="Search">
                             <i class="bi bi-search fs-6"></i>
                         </button>
+                        <!-- Realtime Live Search Dropdown -->
+                        <div class="dj-search-dropdown" id="desktopSearchDropdown" role="listbox" aria-label="Search suggestions"></div>
                     </form>
 
                     <!-- Right Quick Links & Actions -->
@@ -169,12 +171,14 @@
 
                 <!-- Mobile Search Bar (visible only on small screens) -->
                 <div class="mt-2 d-md-none">
-                    <form class="dj-search-form w-100" action="{% url 'shop:product_list' %}" method="get">
-                        <input class="dj-search-input" type="search" name="q"
-                            placeholder="Search product, brand, and more..." value="{{ request.GET.q|default:'' }}">
+                    <form class="dj-search-form w-100" action="{% url 'shop:product_list' %}" method="get" id="mobileSearchForm">
+                        <input class="dj-search-input" type="search" name="q" id="mobile-search-input"
+                            placeholder="Search product, brand, and more..." value="{{ request.GET.q|default:'' }}" autocomplete="off">
                         <button class="dj-search-btn" type="submit" aria-label="Search">
                             <i class="bi bi-search"></i>
                         </button>
+                        <!-- Realtime Live Search Dropdown -->
+                        <div class="dj-search-dropdown" id="mobileSearchDropdown" role="listbox" aria-label="Search suggestions"></div>
                     </form>
                 </div>
             </div>
@@ -210,7 +214,7 @@
                         <i class="bi bi-truck text-info"></i>
                         <span>Track Order</span>
                     </a>
-                    <a href="#contact" class="dj-cat-item">
+                    <a href="{% url 'shop:home' %}#contact" class="dj-cat-item">
                         <i class="bi bi-headset text-primary"></i>
                         <span>Contact Us</span>
                     </a>
@@ -219,21 +223,47 @@
         </nav>
     </div>
 
-    <!-- ── Flash Messages ────────────────────────────────────────────── -->
-    <div class="container mt-3">
+    <!-- ── Modern Floating Toast Notifications Container ──────────────── -->
+    <div id="dj-toast-container" class="dj-toast-container" aria-live="polite" aria-atomic="true">
         {% if messages %}
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm rounded-3 d-flex align-items-center gap-2"
-            role="alert">
-            {% if message.tags == 'success' %}
-            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
-            {% elif message.tags == 'error' or message.tags == 'danger' %}
-            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
-            {% else %}
-            <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
-            {% endif %}
-            <div>{{ message }}</div>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        <div class="dj-toast dj-toast-{{ message.tags|default:'info' }}" role="alert" data-autohide="true" data-delay="4500">
+            <div class="dj-toast-icon-wrap">
+                {% if message.tags == 'success' %}
+                <i class="bi bi-check2-circle"></i>
+                {% elif message.tags == 'error' or message.tags == 'danger' %}
+                <i class="bi bi-exclamation-circle-fill"></i>
+                {% elif message.tags == 'warning' %}
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                {% else %}
+                <i class="bi bi-info-circle-fill"></i>
+                {% endif %}
+            </div>
+            <div class="dj-toast-content">
+                <div class="dj-toast-header">
+                    <span class="dj-toast-title">
+                        {% if message.tags == 'success' %}
+                            Success
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            Error
+                        {% elif message.tags == 'warning' %}
+                            Attention
+                        {% else %}
+                            Notice
+                        {% endif %}
+                    </span>
+                    <span class="dj-toast-time">Just now</span>
+                    <button type="button" class="dj-toast-close" aria-label="Close" onclick="dismissToast(this.closest('.dj-toast'))">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="dj-toast-body">
+                    {{ message }}
+                </div>
+            </div>
+            <div class="dj-toast-progress">
+                <div class="dj-toast-progress-bar"></div>
+            </div>
         </div>
         {% endfor %}
         {% endif %}
@@ -244,162 +274,15 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- ── Mega Dark Footer (Contact Form + Real Stripe Gateways) ── -->
-    <footer class="dj-footer" id="contact">
+    <!-- ── Modern Footer ── -->
+    <footer class="dj-footer">
         <div class="container">
 
-            <!-- ── Top Contact Section (Outlet Location & Interactive Contact Form) ── -->
-            <div class="dj-footer-contact-wrap mb-5">
-                <div class="row g-4 align-items-stretch">
-
-                    <!-- Left: Outlet Location & Support Info -->
-                    <div class="col-lg-5">
-                        <div class="dj-footer-store-card h-100">
-                            <div class="dj-footer-pill-badge mb-2">
-                                <i class="bi bi-geo-alt-fill text-primary"></i>
-                                <span>OFFICIAL FLAGSHIP STORE</span>
-                            </div>
-                            <h3 class="dj-footer-store-title">Visit Our Experience Store</h3>
-                            <p class="text-secondary small mb-4">
-                                Experience all latest flagship devices, foldables, smart wearables, and audio gear in
-                                person at our flagship outlet.
-                            </p>
-
-                            <div class="dj-footer-info-item mb-3">
-                                <div class="dj-info-icon"><i class="bi bi-shop"></i></div>
-                                <div>
-                                    <div class="dj-info-label">Shop Address</div>
-                                    <div class="dj-info-val">Shop #45-46, Level 5, Block B, Bashundhara City Shopping
-                                        Mall, Panthapath, Dhaka-1205</div>
-                                </div>
-                            </div>
-
-                            <div class="dj-footer-info-item mb-3">
-                                <div class="dj-info-icon"><i class="bi bi-telephone-inbound-fill"></i></div>
-                                <div>
-                                    <div class="dj-info-label">Hotline &amp; WhatsApp</div>
-                                    <div class="dj-info-val">
-                                        <a href="tel:09678300400" class="text-primary fw-bold">0172345678</a>
-
-
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="dj-footer-info-item mb-3">
-                                <div class="dj-info-icon"><i class="bi bi-envelope-at-fill"></i></div>
-                                <div>
-                                    <div class="dj-info-label">Official Support Email</div>
-                                    <div class="dj-info-val">
-                                        <a href="mailto:support@djcommerce.com"
-                                            class="text-dark fw-medium">support@djcommerce.com</a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="dj-footer-info-item">
-                                <div class="dj-info-icon"><i class="bi bi-clock-history"></i></div>
-                                <div>
-                                    <div class="dj-info-label">Store Hours</div>
-                                    <div class="dj-info-val">10:00 AM - 08:30 PM (Weekly Holiday: Tuesday)</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Contact Form -->
-                    <div class="col-lg-7">
-                        <div class="dj-footer-form-card h-100">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <div>
-                                    <div class="dj-footer-pill-badge mb-1">
-                                        <i class="bi bi-chat-dots-fill text-primary"></i>
-                                        <span>GET IN TOUCH</span>
-                                    </div>
-                                    <h4 class="text-dark fw-bold mb-0">Send Us a Message</h4>
-                                </div>
-                                <span
-                                    class="badge bg-primary text-white px-3 py-1.5 rounded-pill small fw-bold d-none d-sm-inline-block">
-                                    <i class="bi bi-lightning-charge-fill"></i> Quick Response
-                                </span>
-                            </div>
-                            <p class="text-secondary small mb-3">
-                                Have questions about smartphone specs, warranty, EMI, or order tracking? Send us your
-                                message and our team will get back to you promptly.
-                            </p>
-
-                            <form id="footer-contact-form" action="{% url 'shop:contact_submit' %}" method="post">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{{ request.path }}">
-
-                                <div class="row g-2 mb-2">
-                                    <div class="col-sm-6">
-                                        <div class="dj-form-group">
-                                            <label class="dj-form-label"><i class="bi bi-person"></i> Your Name
-                                                *</label>
-                                            <input type="text" name="name" class="dj-form-control"
-                                                placeholder="Your Name" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6">
-                                        <div class="dj-form-group">
-                                            <label class="dj-form-label"><i class="bi bi-envelope"></i> Email Address
-                                                *</label>
-                                            <input type="email" name="email" class="dj-form-control"
-                                                placeholder="name@example.com" required>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row g-2 mb-2">
-                                    <div class="col-sm-6">
-                                        <div class="dj-form-group">
-                                            <label class="dj-form-label"><i class="bi bi-telephone"></i> Phone
-                                                Number</label>
-                                            <input type="tel" name="phone" class="dj-form-control"
-                                                placeholder="017XXXXXXXX">
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6">
-                                        <div class="dj-form-group">
-                                            <label class="dj-form-label"><i class="bi bi-bookmark"></i> Subject</label>
-                                            <input type="text" name="subject" class="dj-form-control"
-                                                placeholder="e.g. Pre-order / EMI Inquiry">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="dj-form-group mb-3">
-                                    <label class="dj-form-label"><i class="bi bi-pencil-square"></i> Your Message
-                                        *</label>
-                                    <textarea name="message" class="dj-form-control" rows="3"
-                                        placeholder="Write your message or inquiry here..." required></textarea>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                    <button type="submit" class="dj-btn-submit-contact" id="btn-submit-contact">
-                                        <i class="bi bi-send-fill me-1.5"></i> Send Message
-                                    </button>
-                                    <div class="text-secondary small d-flex align-items-center gap-1.5">
-                                        <i class="bi bi-shield-check text-success"></i>
-                                        <span>Your privacy is 100% protected.</span>
-                                    </div>
-                                </div>
-
-                                <div id="contact-form-alert" class="alert mt-3 py-2 px-3 small d-none" role="alert">
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- ── Main Footer Columns (Brand, Navigation & Stripe Payment Methods) ── -->
-            <div class="row g-4 mb-4 pt-4 border-top border-secondary border-opacity-25">
+            <!-- ── Main Footer Columns (Brand, Navigation & Payment Methods) ── -->
+            <div class="row g-4 mb-4">
 
                 <!-- Column 1: Brand & Hotline -->
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-5 col-md-12">
                     <div class="dj-brand-logo mb-3">
                         <div class="dj-logo-icon">
                             <i class="bi bi-phone"></i>
@@ -415,11 +298,43 @@
                         home delivery.
                     </p>
 
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 mb-3">
                         <a href="#" class="dj-icon-btn" title="Facebook"><i class="bi bi-facebook"></i></a>
                         <a href="#" class="dj-icon-btn" title="YouTube"><i class="bi bi-youtube"></i></a>
                         <a href="#" class="dj-icon-btn" title="Instagram"><i class="bi bi-instagram"></i></a>
                         <a href="#" class="dj-icon-btn" title="Twitter"><i class="bi bi-twitter-x"></i></a>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="dj-payment-strip-wrap">
+                            <span class="small fw-bold text-secondary text-nowrap flex-shrink-0">We Accept:</span>
+                            <div class="dj-payment-cards-grid">
+                                <div class="dj-payment-card-item" title="Visa">
+                                    <img src="{% static 'images/payments/visa.png' %}" alt="Visa" loading="lazy">
+                                </div>
+                                <div class="dj-payment-card-item" title="Mastercard">
+                                    <img src="{% static 'images/payments/mastercard.png' %}" alt="Mastercard" loading="lazy">
+                                </div>
+                                <div class="dj-payment-card-item" title="American Express">
+                                    <img src="{% static 'images/payments/amex.png' %}" alt="American Express" loading="lazy">
+                                </div>
+                                <div class="dj-payment-card-item" title="JCB">
+                                    <img src="{% static 'images/payments/jcb.png' %}" alt="JCB" loading="lazy">
+                                </div>
+                                <div class="dj-payment-card-item" title="Diners Club">
+                                    <img src="{% static 'images/payments/dinersclub.png' %}" alt="Diners Club" loading="lazy">
+                                </div>
+                                <div class="dj-payment-card-item dj-wallet-card" title="Apple Pay">
+                                    <img src="{% static 'images/payments/apple-pay.png' %}" alt="Apple Pay" loading="lazy">
+                                </div>
+                                <div class="dj-payment-card-item dj-wallet-card" title="Google Pay">
+                                    <img src="{% static 'images/payments/google-pay.png' %}" alt="Google Pay" loading="lazy">
+                                </div>
+                                <div class="dj-payment-card-item" title="Stripe">
+                                    <img src="{% static 'images/payments/stripe.png' %}" alt="Stripe" loading="lazy">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -427,83 +342,46 @@
                 <div class="col-lg-2 col-6">
                     <h5>Quick Links</h5>
                     <ul class="dj-footer-links">
-                        <li><a href="{% url 'shop:product_list' %}">All Smartphones</a></li>
-                        <li><a href="{% url 'shop:home' %}#featured-categories">Featured Categories</a></li>
-                        <li><a href="{% url 'shop:home' %}#featured-products">Featured Products</a></li>
-                        <li><a href="{% url 'shop:home' %}#new-arrivals">New Arrivals</a></li>
-                        <li><a href="{% url 'shop:home' %}#best-offers">Best Offers &amp; Deals</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Refund &amp; Return Policy</a></li>
+                        <li><a href="#">Warranty Policy</a></li>
                     </ul>
                 </div>
 
-                <!-- Column 3: Customer Care & Policies -->
-                <div class="col-lg-2 col-6">
-                    <h5>Customer Care</h5>
-                    <ul class="dj-footer-links">
-                        <li><a href="{% url 'shop:order_lookup' %}">Track Your Order</a></li>
-                        <li><a href="{% url 'shop:cart_detail' %}">Shopping Cart</a></li>
-                        <li><a href="{% url 'shop:dashboard' %}">My Account</a></li>
-                        <li><a href="#">36 Months EMI Policy</a></li>
-                        <li><a href="#">Warranty Guidelines</a></li>
-                        <li><a href="/admin/" target="_blank" class="text-primary"><i
-                                    class="bi bi-shield-lock me-1"></i> Admin Portal</a></li>
-                    </ul>
-                </div>
-
-                <!-- Column 4: Stripe Secure Payment Methods (Production Real Cards) -->
+                <!-- Column 3: Contacts -->
                 <div class="col-lg-5 col-md-12">
-                    <div class="dj-footer-payment-panel">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h5 class="mb-0 text-dark fw-bold">
-                                <i class="bi bi-stripe text-info me-1.5"></i> Stripe Secure Payments
-                            </h5>
-                            <span
-                                class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2.5 py-1 rounded-pill small">
-                                <i class="bi bi-shield-check"></i> 256-bit SSL
-                            </span>
-                        </div>
-                        <p class="small text-secondary mb-3">
-                            We accept all major global credit &amp; debit cards and digital wallets with
-                            industry-standard Stripe encryption:
-                        </p>
-
-                        <!-- Production Payment Method Vector Cards -->
-                        <div class="dj-payment-cards-grid mb-3">
-                            <div class="dj-payment-card-item" title="Visa">
-                                <img src="{% static 'images/payments/visa.png' %}" alt="Visa" loading="lazy">
+                    <h5>Contacts</h5>
+                    <ul class="dj-footer-contact-list">
+                        <li>
+                            <i class="bi bi-geo-alt-fill dj-contact-icon"></i>
+                            <div>
+                                <strong class="dj-contact-label">Shop Address:</strong>
+                                <span class="dj-contact-value">Shop #45-46, Level 5, Block B, Bashundhara City Shopping Mall, Panthapath, Dhaka-1205</span>
                             </div>
-                            <div class="dj-payment-card-item" title="Mastercard">
-                                <img src="{% static 'images/payments/mastercard.png' %}" alt="Mastercard"
-                                    loading="lazy">
+                        </li>
+                        <li>
+                            <i class="bi bi-clock-history dj-contact-icon"></i>
+                            <div>
+                                <strong class="dj-contact-label">Store Hours:</strong>
+                                <span class="dj-contact-value">10:00 AM - 08:30 PM (Weekly Holiday: Tuesday)</span>
                             </div>
-                            <div class="dj-payment-card-item" title="American Express">
-                                <img src="{% static 'images/payments/amex.png' %}" alt="American Express"
-                                    loading="lazy">
+                        </li>
+                        <li>
+                            <i class="bi bi-telephone-inbound-fill dj-contact-icon"></i>
+                            <div>
+                                <strong class="dj-contact-label">Phone:</strong>
+                                <a href="tel:0172345678" class="dj-contact-value">0172345678</a>
                             </div>
-                            <div class="dj-payment-card-item" title="JCB">
-                                <img src="{% static 'images/payments/jcb.png' %}" alt="JCB" loading="lazy">
+                        </li>
+                        <li>
+                            <i class="bi bi-envelope-at-fill dj-contact-icon"></i>
+                            <div>
+                                <strong class="dj-contact-label">Email:</strong>
+                                <a href="mailto:support@djcommerce.com" class="dj-contact-value">support@djcommerce.com</a>
                             </div>
-                            <div class="dj-payment-card-item" title="Diners Club">
-                                <img src="{% static 'images/payments/dinersclub.png' %}" alt="Diners Club"
-                                    loading="lazy">
-                            </div>
-                            <div class="dj-payment-card-item dj-wallet-card" title="Apple Pay">
-                                <img src="{% static 'images/payments/apple-pay.png' %}" alt="Apple Pay" loading="lazy">
-                            </div>
-                            <div class="dj-payment-card-item dj-wallet-card" title="Google Pay">
-                                <img src="{% static 'images/payments/google-pay.png' %}" alt="Google Pay"
-                                    loading="lazy">
-                            </div>
-                        </div>
-
-                        <div class="dj-payment-security-box">
-                            <i class="bi bi-patch-check-fill text-success fs-4 flex-shrink-0"></i>
-                            <div class="small text-secondary">
-                                <strong class="text-dark d-block">100% Encrypted &amp; PCI-DSS Level 1
-                                    Compliant</strong>
-                                Your payment details are processed directly and securely via Stripe.
-                            </div>
-                        </div>
-                    </div>
+                        </li>
+                    </ul>
                 </div>
 
             </div>
@@ -511,14 +389,11 @@
             <!-- Footer Bottom -->
             <div class="dj-footer-bottom">
                 <div>
-                    &copy; 2026 <strong>djCommerce</strong>. All Rights Reserved. &bull; Developed by <a
-                        href="https://github.com/ArkaKarmoker" target="_blank" rel="noopener noreferrer"
-                        class="text-decoration-none fw-semibold text-primary">Arka Karmoker</a>
+                    &copy; 2026 <strong>djCommerce</strong>. All Rights Reserved.
                 </div>
-                <div class="d-flex gap-3">
-                    <a href="#" class="text-secondary small">Privacy Policy</a>
-                    <a href="#" class="text-secondary small">Terms of Service</a>
-                    <a href="#" class="text-secondary small">Refund &amp; Return</a>
+                <div>
+                    Developed by <a href="https://github.com/ArkaKarmoker" target="_blank" rel="noopener noreferrer"
+                        class="text-decoration-none fw-semibold text-primary">Arka Karmoker</a>
                 </div>
             </div>
         </div>
@@ -543,7 +418,7 @@
             </a>
             <a href="{% url 'shop:cart_detail' %}" class="dj-mobile-bar-item">
                 <i class="bi bi-bag-fill"></i>
-                <span>Cart ({{ cart|length }})</span>
+                <span>Cart (<span class="dj-mobile-cart-count">{{ cart|length }}</span>)</span>
             </a>
             {% if user.is_authenticated %}
             <a href="{% url 'shop:dashboard' %}" class="dj-mobile-bar-item">
@@ -697,8 +572,8 @@
             window.addEventListener('scroll', handleScrollGlass, { passive: true });
             handleScrollGlass();
 
-            // ── 5. Footer Contact Form AJAX Submission ─────────────────────
-            const contactForm = document.getElementById('footer-contact-form');
+            // ── 5. Contact Form AJAX Submission ─────────────────────
+            const contactForm = document.getElementById('contact-form') || document.getElementById('footer-contact-form');
             const contactAlert = document.getElementById('contact-form-alert');
             const contactBtn = document.getElementById('btn-submit-contact');
 
@@ -739,6 +614,429 @@
                         });
                 });
             }
+
+            // ── 6. Realtime Live Search Controller ──────────────────────────
+            function initRealtimeSearch(inputId, dropdownId, formId) {
+                const input = document.getElementById(inputId);
+                const dropdown = document.getElementById(dropdownId);
+                const form = document.getElementById(formId);
+
+                if (!input || !dropdown || !form) return;
+
+                let debounceTimer = null;
+                let activeAbortController = null;
+                let activeIndex = -1;
+
+                function escapeHtml(str) {
+                    if (!str) return '';
+                    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                }
+
+                function highlightMatch(text, query) {
+                    if (!text || !query) return escapeHtml(text);
+                    const escapedQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`(${escapedQ})`, 'gi');
+                    return escapeHtml(text).replace(regex, '<mark>$1</mark>');
+                }
+
+                function showDropdown() {
+                    dropdown.classList.add('show');
+                }
+
+                function hideDropdown() {
+                    dropdown.classList.remove('show');
+                    activeIndex = -1;
+                }
+
+                function updateActiveItem(items) {
+                    items.forEach((item, idx) => {
+                        if (idx === activeIndex) {
+                            item.classList.add('active');
+                            item.scrollIntoView({ block: 'nearest' });
+                        } else {
+                            item.classList.remove('active');
+                        }
+                    });
+                }
+
+                function renderLoading() {
+                    dropdown.innerHTML = `
+                        <div class="dj-search-dropdown-loading">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            <span>Searching products...</span>
+                        </div>
+                    `;
+                    showDropdown();
+                }
+
+                function renderResults(data, query) {
+                    activeIndex = -1;
+                    if (!data.results || data.results.length === 0) {
+                        dropdown.innerHTML = `
+                            <div class="dj-search-dropdown-empty">
+                                <i class="bi bi-search text-muted fs-3 mb-2 d-block"></i>
+                                <div class="fw-bold text-dark mb-1">No products found for "${escapeHtml(query)}"</div>
+                                <div class="small text-secondary">Try searching for <strong>Apple</strong>, <strong>Samsung</strong>, or <strong>Pixel</strong>.</div>
+                            </div>
+                        `;
+                        showDropdown();
+                        return;
+                    }
+
+                    const itemsHtml = data.results.map((item, idx) => {
+                        const imgHtml = item.image_url 
+                            ? `<img src="${item.image_url}" alt="${escapeHtml(item.name)}" loading="lazy">`
+                            : `<i class="bi bi-phone"></i>`;
+                        
+                        const oldPriceHtml = item.regular_price 
+                            ? `<span class="dj-search-item-old-price">&#2547; ${item.regular_price}</span>` 
+                            : '';
+                        
+                        const discountPillHtml = item.discount_percent 
+                            ? `<span class="dj-search-discount-pill">${item.discount_percent}% OFF</span>` 
+                            : '';
+
+                        const metaCat = item.category ? `&bull; ${escapeHtml(item.category)}` : '';
+
+                        return `
+                            <a href="${item.detail_url}" class="dj-search-item" data-index="${idx}">
+                                <div class="dj-search-item-img">${imgHtml}</div>
+                                <div class="dj-search-item-info">
+                                    <div class="dj-search-item-name">${highlightMatch(item.name, query)}</div>
+                                    <div class="dj-search-item-meta">
+                                        <span class="dj-search-item-brand">${escapeHtml(item.brand)}</span>
+                                        <span class="dj-search-item-cat">${metaCat}</span>
+                                    </div>
+                                </div>
+                                <div class="dj-search-item-pricing">
+                                    <span class="dj-search-item-price">&#2547; ${item.price}</span>
+                                    ${oldPriceHtml}
+                                    ${discountPillHtml}
+                                </div>
+                                <i class="bi bi-chevron-right dj-search-item-arrow"></i>
+                            </a>
+                        `;
+                    }).join('');
+
+                    dropdown.innerHTML = `
+                        <div class="dj-search-dropdown-header">
+                            <span class="dj-search-dropdown-badge">
+                                <i class="bi bi-box-seam text-primary me-1.5"></i> Products (${data.total})
+                            </span>
+                            <span class="dj-search-dropdown-hint d-none d-sm-inline">
+                                Press <kbd>ESC</kbd> to close
+                            </span>
+                        </div>
+                        <div class="dj-search-results-list">
+                            ${itemsHtml}
+                        </div>
+                        <div class="dj-search-dropdown-footer">
+                            <a href="/products/?q=${encodeURIComponent(query)}" class="dj-search-view-all-btn">
+                                <span>View all <strong>${data.total}</strong> results for "${escapeHtml(query)}"</span>
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    `;
+                    showDropdown();
+                }
+
+                function performSearch(query) {
+                    if (activeAbortController) {
+                        activeAbortController.abort();
+                    }
+                    activeAbortController = new AbortController();
+
+                    renderLoading();
+
+                    fetch(`/api/search-suggest/?q=${encodeURIComponent(query)}`, {
+                        signal: activeAbortController.signal,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (input.value.trim() === query) {
+                            renderResults(data, query);
+                        }
+                    })
+                    .catch(err => {
+                        if (err.name !== 'AbortError') {
+                            hideDropdown();
+                        }
+                    });
+                }
+
+                input.addEventListener('input', function () {
+                    const val = this.value.trim();
+                    clearTimeout(debounceTimer);
+                    if (val.length === 0) {
+                        hideDropdown();
+                        return;
+                    }
+                    debounceTimer = setTimeout(() => {
+                        performSearch(val);
+                    }, 240);
+                });
+
+                input.addEventListener('focus', function () {
+                    const val = this.value.trim();
+                    if (val.length > 0 && dropdown.innerHTML.trim().length > 0) {
+                        showDropdown();
+                    }
+                });
+
+                input.addEventListener('keydown', function (e) {
+                    const items = dropdown.querySelectorAll('.dj-search-item');
+                    if (!dropdown.classList.contains('show') || items.length === 0) {
+                        if (e.key === 'Escape') hideDropdown();
+                        return;
+                    }
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        activeIndex = (activeIndex + 1) % items.length;
+                        updateActiveItem(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        activeIndex = (activeIndex - 1 + items.length) % items.length;
+                        updateActiveItem(items);
+                    } else if (e.key === 'Enter') {
+                        if (activeIndex >= 0 && items[activeIndex]) {
+                            e.preventDefault();
+                            items[activeIndex].click();
+                        }
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        hideDropdown();
+                    }
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!form.contains(e.target)) {
+                        hideDropdown();
+                    }
+                });
+            }
+
+            initRealtimeSearch('main-search-input', 'desktopSearchDropdown', 'desktopSearchForm');
+            initRealtimeSearch('mobile-search-input', 'mobileSearchDropdown', 'mobileSearchForm');
+
+            // Quick search '/' shortcut focus
+            document.addEventListener('keydown', function (e) {
+                if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    const deskInput = document.getElementById('main-search-input');
+                    if (deskInput && window.innerWidth >= 768) {
+                        e.preventDefault();
+                        deskInput.focus();
+                        deskInput.select();
+                    }
+                }
+            });
+
+            // ── 7. Modern Toast Notification System ──────────────────────
+            const existingToasts = document.querySelectorAll('.dj-toast');
+            existingToasts.forEach(toast => {
+                const delay = parseInt(toast.getAttribute('data-delay')) || 4500;
+                let timeoutId = null;
+                let remaining = delay;
+                let startTime = Date.now();
+
+                function startTimer() {
+                    startTime = Date.now();
+                    timeoutId = setTimeout(() => {
+                        dismissToast(toast);
+                    }, remaining);
+                }
+
+                function pauseTimer() {
+                    clearTimeout(timeoutId);
+                    remaining -= (Date.now() - startTime);
+                    if (remaining < 500) remaining = 500;
+                }
+
+                toast.addEventListener('mouseenter', pauseTimer);
+                toast.addEventListener('mouseleave', startTimer);
+                startTimer();
+            });
+        });
+
+        // Global dismiss function
+        function dismissToast(toastEl) {
+            if (!toastEl || toastEl.classList.contains('dj-toast-dismissing')) return;
+            toastEl.classList.add('dj-toast-dismissing');
+            setTimeout(() => {
+                toastEl.remove();
+            }, 320);
+        }
+
+        // Global dynamic toast helper for client-side / AJAX actions
+        window.showToast = function(message, type = 'success', title = '') {
+            let container = document.getElementById('dj-toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'dj-toast-container';
+                container.className = 'dj-toast-container';
+                document.body.appendChild(container);
+            }
+
+            const typeIcons = {
+                success: 'bi-check2-circle',
+                error: 'bi-exclamation-circle-fill',
+                danger: 'bi-exclamation-circle-fill',
+                warning: 'bi-exclamation-triangle-fill',
+                info: 'bi-info-circle-fill'
+            };
+
+            const typeTitles = {
+                success: 'Success',
+                error: 'Error',
+                danger: 'Error',
+                warning: 'Attention',
+                info: 'Notice'
+            };
+
+            const iconClass = typeIcons[type] || typeIcons.info;
+            const toastTitle = title || typeTitles[type] || 'Notice';
+
+            const toast = document.createElement('div');
+            toast.className = `dj-toast dj-toast-${type}`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('data-delay', '4500');
+
+            toast.innerHTML = `
+                <div class="dj-toast-icon-wrap">
+                    <i class="bi ${iconClass}"></i>
+                </div>
+                <div class="dj-toast-content">
+                    <div class="dj-toast-header">
+                        <span class="dj-toast-title">${toastTitle}</span>
+                        <span class="dj-toast-time">Just now</span>
+                        <button type="button" class="dj-toast-close" aria-label="Close" onclick="dismissToast(this.closest('.dj-toast'))">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="dj-toast-body">${message}</div>
+                </div>
+                <div class="dj-toast-progress">
+                    <div class="dj-toast-progress-bar"></div>
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            let delay = 4500;
+            let timeoutId = null;
+            let remaining = delay;
+            let startTime = Date.now();
+
+            function startTimer() {
+                startTime = Date.now();
+                timeoutId = setTimeout(() => {
+                    dismissToast(toast);
+                }, remaining);
+            }
+
+            function pauseTimer() {
+                clearTimeout(timeoutId);
+                remaining -= (Date.now() - startTime);
+                if (remaining < 500) remaining = 500;
+            }
+
+            toast.addEventListener('mouseenter', pauseTimer);
+            toast.addEventListener('mouseleave', startTimer);
+            startTimer();
+        };
+
+        // ── 8. Global Realtime AJAX Add-to-Cart Controller ────────────
+        window.updateCartBadges = function(newCount) {
+            const desktopBadges = document.querySelectorAll('.dj-badge-counter');
+            desktopBadges.forEach(badge => {
+                badge.textContent = newCount;
+                badge.classList.remove('dj-badge-bounce');
+                void badge.offsetWidth; // force DOM reflow to re-trigger animation
+                badge.classList.add('dj-badge-bounce');
+            });
+
+            const mobileCountEl = document.querySelector('.dj-mobile-cart-count');
+            if (mobileCountEl) {
+                mobileCountEl.textContent = newCount;
+                mobileCountEl.classList.remove('dj-badge-bounce');
+                void mobileCountEl.offsetWidth;
+                mobileCountEl.classList.add('dj-badge-bounce');
+            }
+        };
+
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+            if (!form || !form.action || !form.action.includes('/cart/add/')) return;
+
+            // If submitted via "Shop Now" with buy_now=1, allow standard navigation/redirect!
+            const formData = new FormData(form);
+            if (formData.get('buy_now') === '1') {
+                return;
+            }
+
+            e.preventDefault();
+
+            // Find submit button in form
+            const submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('button');
+            let originalBtnHtml = '';
+            if (submitBtn) {
+                originalBtnHtml = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                
+                // Visual loading state
+                if (submitBtn.classList.contains('dj-icon-btn-cart')) {
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" style="width: 14px; height: 14px; border-width: 2px;" role="status"></span>';
+                } else {
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status"></span> Adding...';
+                }
+            }
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
+            .then(data => {
+                if (submitBtn) {
+                    // Success checkmark state
+                    if (submitBtn.classList.contains('dj-icon-btn-cart')) {
+                        submitBtn.innerHTML = '<i class="bi bi-check2 text-success fw-bold"></i>';
+                    } else {
+                        submitBtn.innerHTML = '<i class="bi bi-check2-circle text-success me-1.5"></i> Added!';
+                    }
+
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHtml;
+                    }, 1200);
+                }
+
+                // 1. Update Cart Badge Count in Navbar & Mobile Bar
+                if (typeof data.cart_count !== 'undefined') {
+                    window.updateCartBadges(data.cart_count);
+                }
+
+                // 2. Trigger Modern Floating Toast Notification
+                if (window.showToast) {
+                    window.showToast(data.message || 'Item added to cart successfully!', 'success', 'Added to Cart');
+                }
+            })
+            .catch(err => {
+                console.error('AJAX add to cart error:', err);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                }
+                // Fallback to normal form submission if fetch failed
+                form.submit();
+            });
         });
     </script>
     {% block extra_js %}{% endblock %}

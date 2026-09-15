@@ -3,6 +3,10 @@
 
 {% block title %}My Account - djCommerce{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
 
@@ -15,10 +19,10 @@
     </nav>
 
     <!-- Main Account Dashboard Grid -->
-    <div class="row g-4">
+    <div class="dj-dashboard-layout">
         
         <!-- Left Column: Navigation Sidebar & User Badge -->
-        <div class="col-lg-3 col-md-4">
+        <div class="dj-dashboard-sidebar-col">
             <div class="dj-account-sidebar shadow-sm">
                 
                 <!-- Profile Header Banner -->
@@ -102,7 +106,7 @@
         </div>
 
         <!-- Right Column: Account Content Panes -->
-        <div class="col-lg-9 col-md-8">
+        <div class="dj-dashboard-content-col">
             
             <!-- ═══════════════════════════════════════════════════════════════
                  PANE 1: ACCOUNT DETAILS & OVERVIEW
@@ -127,9 +131,10 @@
                             <div class="dj-metric-icon blue">
                                 <i class="bi bi-box-seam-fill"></i>
                             </div>
-                            <div class="dj-metric-num">{{ total_orders }}</div>
-                            <div class="dj-metric-label">Total Orders</div>
-                            <div class="dj-metric-sub">Lifetime smartphone orders</div>
+                            <div class="dj-metric-content">
+                                <div class="dj-metric-num">{{ total_orders }}</div>
+                                <div class="dj-metric-label">Total Orders</div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-4 col-sm-6">
@@ -137,9 +142,10 @@
                             <div class="dj-metric-icon green">
                                 <i class="bi bi-check-circle-fill"></i>
                             </div>
-                            <div class="dj-metric-num text-success">{{ completed_orders_count }}</div>
-                            <div class="dj-metric-label">Completed Orders</div>
-                            <div class="dj-metric-sub">Fulfilled & verified</div>
+                            <div class="dj-metric-content">
+                                <div class="dj-metric-num text-success">{{ completed_orders_count }}</div>
+                                <div class="dj-metric-label">Completed Orders</div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-4 col-sm-12">
@@ -147,9 +153,10 @@
                             <div class="dj-metric-icon purple">
                                 <i class="bi bi-wallet2"></i>
                             </div>
-                            <div class="dj-metric-num" style="color: var(--primary);">&#2547; {{ total_spent|floatformat:"0" }}</div>
-                            <div class="dj-metric-label">Total Amount Spent</div>
-                            <div class="dj-metric-sub">Across all confirmed orders</div>
+                            <div class="dj-metric-content">
+                                <div class="dj-metric-num" style="color: var(--primary);">&#2547; {{ total_spent|floatformat:"0" }}</div>
+                                <div class="dj-metric-label">Total Amount Spent</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -215,13 +222,13 @@
                         <p class="text-secondary small mb-0">Track and view invoices for all your recent smartphone orders.</p>
                     </div>
                     {% if total_orders %}
-                        <span class="badge bg-primary text-white rounded-pill px-3 py-1.5 fw-semibold">{{ total_orders }} Total</span>
+                        <span class="dj-cart-count-badge">{{ total_orders }} Total</span>
                     {% endif %}
                 </div>
                 
                 {% if orders %}
                 <div class="table-responsive">
-                    <table class="table align-middle table-hover">
+                    <table class="table align-middle table-hover w-100" id="ordersTable">
                         <thead class="table-light">
                             <tr class="small text-uppercase text-secondary fw-bold">
                                 <th>Order #</th>
@@ -229,7 +236,7 @@
                                 <th>Product</th>
                                 <th>Total</th>
                                 <th>Status</th>
-                                <th class="text-end">Actions</th>
+                                <th class="text-end" data-orderable="false">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -243,12 +250,12 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-order="{{ ord.order_date|date:'Y-m-d H:i:s' }}">
                                     <div class="fw-semibold text-dark small">{{ ord.order_date|date:"d M Y" }}</div>
                                     <div class="text-muted" style="font-size: 0.75rem;">{{ ord.order_date|time:"h:i A" }}</div>
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center gap-2.5">
+                                    <div class="d-flex align-items-center gap-3">
                                         {% if ord.product.image %}
                                             <img src="{{ ord.product.image.url }}" alt="{{ ord.product.name }}" class="rounded bg-light border p-1" style="width: 44px; height: 44px; object-fit: contain;">
                                         {% endif %}
@@ -265,7 +272,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="fw-bold text-dark">&#2547; {{ ord.total_price|floatformat:"0" }}</td>
+                                <td class="fw-bold text-dark" data-order="{{ ord.total_price }}">&#2547; {{ ord.total_price|floatformat:"0" }}</td>
                                 <td>
                                     <span class="dj-status-pill status-{{ ord.status|lower }}">
                                         <span class="dj-status-dot"></span>
@@ -273,9 +280,9 @@
                                     </span>
                                 </td>
                                 <td class="text-end">
-                                    <div class="d-inline-flex align-items-center gap-1.5">
-                                        <a href="{% url 'shop:order_detail' ord.order_number %}" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1 fw-semibold">
-                                            <i class="bi bi-receipt me-1"></i> Invoice
+                                    <div class="d-inline-flex align-items-center gap-2">
+                                        <a href="{% url 'shop:order_detail' ord.order_number %}" class="btn btn-sm btn-outline-dark rounded-pill px-2.5 py-1" title="View Order Details">
+                                            <i class="bi bi-eye"></i>
                                         </a>
                                         <a href="{% url 'shop:order_lookup' %}?order_number={{ ord.order_number }}" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary" title="Track Shipment">
                                             <i class="bi bi-truck"></i>
@@ -439,10 +446,10 @@
                             
                             <div class="mb-3">
                                 <label class="form-label small fw-bold text-dark">Current Password</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock-fill"></i></span>
-                                    <input type="password" name="current_password" id="current_password" class="form-control border-start-0 border-end-0" placeholder="Enter current password" required>
-                                    <button class="btn btn-outline-secondary bg-white border-start-0 text-secondary" type="button" onclick="togglePassVisibility('current_password', this)" title="Show/Hide Password">
+                                <div class="dj-auth-input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                    <input type="password" name="current_password" id="current_password" class="form-control" placeholder="Enter current password" required>
+                                    <button class="dj-pwd-toggle" type="button" onclick="togglePassVisibility('current_password', this)" title="Show/Hide Password">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
@@ -450,36 +457,26 @@
 
                             <div class="mb-3">
                                 <label class="form-label small fw-bold text-dark">New Password</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-key-fill"></i></span>
-                                    <input type="password" name="new_password" id="new_password" class="form-control border-start-0 border-end-0" placeholder="Minimum 6 characters" oninput="checkPasswordMatch()" required>
-                                    <button class="btn btn-outline-secondary bg-white border-start-0 text-secondary" type="button" onclick="togglePassVisibility('new_password', this)" title="Show/Hide Password">
+                                <div class="dj-auth-input-group">
+                                    <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                                    <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Minimum 6 characters" required>
+                                    <button class="dj-pwd-toggle" type="button" onclick="togglePassVisibility('new_password', this)" title="Show/Hide Password">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-4">
                                 <label class="form-label small fw-bold text-dark">Confirm New Password</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-check2-circle"></i></span>
-                                    <input type="password" name="confirm_new_password" id="confirm_new_password" class="form-control border-start-0 border-end-0" placeholder="Re-enter new password" oninput="checkPasswordMatch()" required>
-                                    <button class="btn btn-outline-secondary bg-white border-start-0 text-secondary" type="button" onclick="togglePassVisibility('confirm_new_password', this)" title="Show/Hide Password">
+                                <div class="dj-auth-input-group">
+                                    <span class="input-group-text"><i class="bi bi-check2-circle"></i></span>
+                                    <input type="password" name="confirm_new_password" id="confirm_new_password" class="form-control" placeholder="Re-enter new password" required>
+                                    <button class="dj-pwd-toggle" type="button" onclick="togglePassVisibility('confirm_new_password', this)" title="Show/Hide Password">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
-                                <div class="small mt-1" id="pwMatchMsg"></div>
                             </div>
 
-                            <div class="p-3 bg-light rounded-3 mb-4">
-                                <div class="small text-muted fw-bold mb-1">Password Requirements:</div>
-                                <div class="small text-muted d-flex align-items-center gap-1.5" id="req-length">
-                                    <i class="bi bi-circle small"></i> At least 6 characters in length
-                                </div>
-                                <div class="small text-muted d-flex align-items-center gap-1.5 mt-0.5" id="req-match">
-                                    <i class="bi bi-circle small"></i> New and Confirm passwords must match
-                                </div>
-                            </div>
 
                             <button type="submit" class="btn btn-primary text-white fw-bold rounded-pill px-4 py-2 shadow-sm">
                                 <i class="bi bi-shield-check me-1"></i> Update Password
@@ -550,11 +547,6 @@
                         </div>
                     </div>
 
-                    <!-- Address Line -->
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-dark">Street / Area Address</label>
-                        <textarea name="address" class="form-control" rows="2" placeholder="House, Road, Area">{{ customer.address|default:'' }}</textarea>
-                    </div>
 
                 </div>
                 <div class="modal-footer border-top">
@@ -624,6 +616,9 @@ function switchTab(paneId, btn, hashName) {
     const targetPane = document.getElementById(paneId);
     if (targetPane) {
         targetPane.classList.remove('d-none');
+        if (paneId === 'orders-pane' && window.adjustOrdersTable) {
+            window.adjustOrdersTable();
+        }
     }
     if (btn) {
         btn.classList.add('active');
@@ -668,35 +663,6 @@ function togglePassVisibility(inputId, btn) {
     }
 }
 
-function checkPasswordMatch() {
-    const p1 = document.getElementById('new_password');
-    const p2 = document.getElementById('confirm_new_password');
-    const reqLen = document.getElementById('req-length');
-    const reqMatch = document.getElementById('req-match');
-    if (!p1 || !p2) return;
-
-    if (p1.value.length >= 6) {
-        reqLen.className = 'small text-success d-flex align-items-center gap-1.5 fw-bold';
-        reqLen.innerHTML = '<i class="bi bi-check-circle-fill"></i> At least 6 characters in length';
-    } else {
-        reqLen.className = 'small text-muted d-flex align-items-center gap-1.5';
-        reqLen.innerHTML = '<i class="bi bi-circle small"></i> At least 6 characters in length';
-    }
-
-    if (p2.value.length > 0) {
-        if (p1.value === p2.value) {
-            reqMatch.className = 'small text-success d-flex align-items-center gap-1.5 fw-bold';
-            reqMatch.innerHTML = '<i class="bi bi-check-circle-fill"></i> Passwords match perfectly';
-        } else {
-            reqMatch.className = 'small text-danger d-flex align-items-center gap-1.5 fw-bold';
-            reqMatch.innerHTML = '<i class="bi bi-x-circle-fill"></i> Passwords do not match';
-        }
-    } else {
-        reqMatch.className = 'small text-muted d-flex align-items-center gap-1.5';
-        reqMatch.innerHTML = '<i class="bi bi-circle small"></i> New and Confirm passwords must match';
-    }
-}
-
 function previewAvatar(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -737,3 +703,54 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function() {
+    if ($('#ordersTable').length) {
+        const ordersDataTable = $('#ordersTable').DataTable({
+            language: {
+                search: "",
+                searchPlaceholder: "Search orders...",
+                lengthMenu: "Show _MENU_ entries",
+                info: "Showing _START_ to _END_ of _TOTAL_ orders",
+                infoEmpty: "No orders found",
+                infoFiltered: "(filtered from _MAX_ total orders)",
+                zeroRecords: "No matching orders found",
+                paginate: {
+                    first: '<i class="bi bi-chevron-double-left"></i>',
+                    previous: '<i class="bi bi-chevron-left"></i>',
+                    next: '<i class="bi bi-chevron-right"></i>',
+                    last: '<i class="bi bi-chevron-double-right"></i>'
+                }
+            },
+            pageLength: 5,
+            lengthMenu: [5, 10, 25, 50, 100],
+            order: [[1, 'desc']],
+            columnDefs: [
+                { orderable: false, targets: 5 }
+            ],
+            autoWidth: false,
+            responsive: true
+        });
+
+        window.adjustOrdersTable = function() {
+            setTimeout(function() {
+                if (ordersDataTable) {
+                    ordersDataTable.columns.adjust().responsive.recalc();
+                }
+            }, 60);
+        };
+
+        // Adjust columns initially if orders-pane is active
+        if (window.location.hash === '#orders' || !$('#orders-pane').hasClass('d-none')) {
+            window.adjustOrdersTable();
+        }
+    }
+});
+</script>
+{% endblock %}
+

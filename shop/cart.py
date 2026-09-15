@@ -118,6 +118,17 @@ class Cart:
     def get_total_price(self):
         return sum(Decimal(item['price']) * item['quantity'] for item in self.cart.values())
 
+    def get_subtotal(self):
+        return self.get_total_price()
+
+    def get_shipping_cost(self):
+        return Decimal('100') if len(self) > 0 else Decimal('0')
+
+    def get_grand_total(self):
+        if len(self) == 0:
+            return Decimal('0')
+        return self.get_total_price() + self.get_shipping_cost()
+
     def clear(self):
         if self.SESSION_KEY in self.session:
             del self.session[self.SESSION_KEY]

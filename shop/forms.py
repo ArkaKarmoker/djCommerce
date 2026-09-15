@@ -153,14 +153,9 @@ class CustomerProfileForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+880 1712-345678'})
     )
-    address = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Delivery address'})
-    )
-
     class Meta:
         model = Customer
-        fields = ['first_name', 'last_name', 'phone', 'address', 'profile_image']
+        fields = ['first_name', 'last_name', 'phone', 'profile_image']
         widgets = {
             'profile_image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
         }

@@ -3,8 +3,10 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from django.db.models import Q
+from django.urls import reverse
+from django.db.models import Q, F, Case, When, Value, IntegerField
 from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import uuid
@@ -19,8 +21,6 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 # Create your views here.
 
 
-from django.db.models import Q, F
-
 def home_view(request):
     """
     Homepage view:
@@ -30,9 +30,9 @@ def home_view(request):
     categories = Category.objects.all()
     
     # 1. Featured Products (Handpicked & Flagship)
-    featured_products = list(Product.objects.filter(is_featured=True).order_by('-price')[:8])
+    featured_products = list(Product.objects.filter(is_featured=True).order_by('-price')[:4])
     if not featured_products:
-        featured_products = list(Product.objects.all().order_by('-price')[:8])
+        featured_products = list(Product.objects.all().order_by('-price')[:4])
     for p in featured_products:
         p._custom_badge = {
             'label': 'Featured',
@@ -41,7 +41,7 @@ def home_view(request):
         }
 
     # 2. New Arrivals (Latest added products)
-    new_products = list(Product.objects.all().order_by('-created_at')[:8])
+    new_products = list(Product.objects.all().order_by('-created_at')[:4])
     for p in new_products:
         p._custom_badge = {
             'label': 'New',
@@ -52,9 +52,9 @@ def home_view(request):
     # 3. Best Offers (Products with largest price cuts / discounts)
     best_offers = list(Product.objects.filter(regular_price__gt=F('price')).annotate(
         discount_diff=F('regular_price') - F('price')
-    ).order_by('-discount_diff')[:8])
+    ).order_by('-discount_diff')[:4])
     if not best_offers:
-        best_offers = list(Product.objects.all().order_by('-price')[:8])
+        best_offers = list(Product.objects.all().order_by('-price')[:4])
     for p in best_offers:
         p._custom_badge = {
             'label': 'Hot Deals',
@@ -215,6 +215,57 @@ def product_list_view(request):
         'total_count': total_count,
     }
     return render(request, 'shop/product_list.html', context)
+
+
+def search_suggest_view(request):
+    """
+    Real-time live search suggestion endpoint for navbar search bar.
+    Returns JSON of matched products (max 6) with thumbnail, price, category, and total count.
+    """
+    q = request.GET.get('q', '').strip()
+    if not q or len(q) < 1:
+        return JsonResponse({'results': [], 'total': 0, 'query': ''})
+
+    matched_qs = Product.objects.filter(
+        Q(name__icontains=q) |
+        Q(brand__icontains=q) |
+        Q(category__name__icontains=q) |
+        Q(category__parent__name__icontains=q)
+    ).distinct()
+
+    total_matches = matched_qs.count()
+
+    top_products = matched_qs.annotate(
+        match_rank=Case(
+            When(name__istartswith=q, then=Value(1)),
+            When(brand__istartswith=q, then=Value(2)),
+            When(name__icontains=q, then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField()
+        )
+    ).order_by('match_rank', '-price')[:6]
+
+    results = []
+    for p in top_products:
+        image_url = p.image.url if p.image else ''
+        results.append({
+            'id': p.id,
+            'name': p.name,
+            'brand': p.brand or '',
+            'category': p.category.name if p.category else '',
+            'price': f"{int(p.price):,}" if p.price else "0",
+            'regular_price': f"{int(p.regular_price):,}" if p.regular_price and p.regular_price > p.price else None,
+            'discount_percent': p.discount_percent if p.discount_percent > 0 else None,
+            'image_url': image_url,
+            'detail_url': reverse('shop:product_detail', args=[p.id]),
+            'in_stock': p.quantity > 0,
+        })
+
+    return JsonResponse({
+        'results': results,
+        'total': total_matches,
+        'query': q,
+    })
 
 
 def product_detail_view(request, pk):
@@ -418,15 +469,16 @@ def cart_add_view(request, product_id):
 
     cart.add(product=product, quantity=quantity, variant=variant)
     item_title = f"{product.name} ({variant.name})" if variant else product.name
-    messages.success(request, f'"{item_title}" added to cart successfully!')
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
             'success': True,
-            'message': f'"{item_title}" added to your cart.',
+            'message': f'"{item_title}" added to cart successfully!',
             'cart_count': len(cart),
             'cart_total': str(cart.get_total_price()),
         })
+
+    messages.success(request, f'"{item_title}" added to cart successfully!')
 
     next_url = request.POST.get('next') or request.GET.get('next')
     if next_url:
@@ -474,7 +526,10 @@ def cart_update_view(request, product_id):
             'item_quantity': item_qty,
             'item_subtotal': f"{item_subtotal:.2f}",
             'cart_count': len(cart),
-            'cart_total': f"{cart.get_total_price():.2f}",
+            'cart_subtotal': f"{cart.get_subtotal():.2f}",
+            'shipping_cost': f"{cart.get_shipping_cost():.2f}",
+            'cart_total': f"{cart.get_grand_total():.2f}",
+            'grand_total': f"{cart.get_grand_total():.2f}",
             'is_empty': len(cart) == 0,
         })
 
@@ -499,10 +554,24 @@ def cart_remove_view(request, product_id):
         return JsonResponse({
             'success': True,
             'cart_count': len(cart),
-            'cart_total': f"{cart.get_total_price():.2f}",
+            'cart_subtotal': f"{cart.get_subtotal():.2f}",
+            'shipping_cost': f"{cart.get_shipping_cost():.2f}",
+            'cart_total': f"{cart.get_grand_total():.2f}",
+            'grand_total': f"{cart.get_grand_total():.2f}",
             'is_empty': len(cart) == 0,
         })
 
+    return redirect('shop:cart_detail')
+
+
+@require_POST
+def cart_clear_view(request):
+    """
+    Remove all items from shopping cart.
+    """
+    cart = Cart(request)
+    cart.clear()
+    messages.info(request, "All items have been removed from your shopping cart.")
     return redirect('shop:cart_detail')
 
 
@@ -760,22 +829,19 @@ def order_success_view(request, order_number):
 
 def order_lookup_view(request):
     """
-    Track orders by customer phone number.
+    Track orders by order number.
     """
-    phone = request.GET.get('phone', '').strip()
+    order_number = request.GET.get('order_number', '').strip()
     orders = None
-    customer = None
 
-    if phone:
-        customer = Customer.objects.filter(phone=phone).first()
-        if customer:
-            orders = Order.objects.filter(customer=customer).order_by('-order_date')
-        else:
-            messages.info(request, f"No orders found for phone number '{phone}'.")
+    if order_number:
+        orders = Order.objects.filter(order_number=order_number).order_by('-order_date')
+        if not orders.exists():
+            messages.info(request, f"No orders found for order number '{order_number}'.")
+            orders = None
 
     context = {
-        'phone': phone,
-        'customer': customer,
+        'order_number': order_number,
         'orders': orders,
     }
     return render(request, 'shop/order_lookup.html', context)

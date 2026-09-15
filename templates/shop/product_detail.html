@@ -11,7 +11,16 @@
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb small">
             <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" class="text-secondary text-decoration-none">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}" class="text-secondary text-decoration-none">Mobile Phone</a></li>
+            {% if product.category %}
+                {% if product.category.parent %}
+                    <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}?category={{ product.category.parent.slug }}" class="text-secondary text-decoration-none">{{ product.category.parent.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}?category={{ product.category.slug }}" class="text-secondary text-decoration-none">{{ product.category.name }}</a></li>
+                {% else %}
+                    <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}?category={{ product.category.slug }}" class="text-secondary text-decoration-none">{{ product.category.name }}</a></li>
+                {% endif %}
+            {% else %}
+                <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}" class="text-secondary text-decoration-none">All Products</a></li>
+            {% endif %}
             {% if product.brand %}
                 <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}?brand={{ product.brand }}" class="text-secondary text-decoration-none">{{ product.brand }}</a></li>
             {% endif %}
@@ -188,17 +197,17 @@
                 <div class="card-header bg-white border-bottom p-3">
                     <ul class="nav nav-pills" id="pdpTabs" role="tablist">
                         <li class="nav-item">
-                            <button class="nav-link active fw-bold text-dark rounded-pill px-4" id="specs-tab" data-bs-toggle="pill" data-bs-target="#specs-pane" type="button">
+                            <button class="nav-link active fw-bold rounded-pill px-4" id="specs-tab" data-bs-toggle="pill" data-bs-target="#specs-pane" type="button">
                                 Specification
                             </button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link fw-bold text-dark rounded-pill px-4" id="desc-tab" data-bs-toggle="pill" data-bs-target="#desc-pane" type="button">
+                            <button class="nav-link fw-bold rounded-pill px-4" id="desc-tab" data-bs-toggle="pill" data-bs-target="#desc-pane" type="button">
                                 Description
                             </button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link fw-bold text-dark rounded-pill px-4" id="reviews-tab" data-bs-toggle="pill" data-bs-target="#reviews-pane" type="button">
+                            <button class="nav-link fw-bold rounded-pill px-4" id="reviews-tab" data-bs-toggle="pill" data-bs-target="#reviews-pane" type="button">
                                 Review ({{ reviews.count }})
                             </button>
                         </li>

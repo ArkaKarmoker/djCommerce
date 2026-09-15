@@ -21,9 +21,6 @@
             {% else %}
                 <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}" class="text-secondary text-decoration-none">All Products</a></li>
             {% endif %}
-            {% if product.brand %}
-                <li class="breadcrumb-item"><a href="{% url 'shop:product_list' %}?brand={{ product.brand }}" class="text-secondary text-decoration-none">{{ product.brand }}</a></li>
-            {% endif %}
             <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">{{ product.name }}</li>
         </ol>
     </nav>
@@ -34,9 +31,9 @@
             
             <!-- Left: Gallery & Main Image -->
             <div class="col-lg-5">
-                <div class="dj-product-img-wrapper mb-3" style="height: 380px; background: #fafafa; border: 1px solid #f1f5f9; border-radius: 12px;">
+                <div class="dj-product-img-wrapper mb-3" id="main-product-img-wrapper" style="width: 100%; aspect-ratio: 1 / 1; background: #f8fafc; border: 1px solid #eaecf0; border-radius: 16px; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0; cursor: zoom-in; position: relative;">
                     {% if product.image %}
-                        <img id="main-product-image" src="{{ product.image.url }}" alt="{{ product.name }}" style="max-height: 340px; max-width: 100%; object-fit: contain;">
+                        <img id="main-product-image" src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border: none; transition: transform 0.15s ease-out; transform-origin: center center;">
                     {% else %}
                         <div class="text-center text-muted">
                             <i class="bi bi-phone fs-1"></i>
@@ -67,17 +64,14 @@
                 <div class="ps-lg-2">
                     
                     <!-- Top Bar: Brand -->
-                    <div class="dj-pdp-brand-bar">
-                        <div class="dj-pdp-brand">
-                            <i class="bi bi-phone fs-5"></i>
-                            <span>{{ product.brand|default:"Official Brand" }}</span>
-                        </div>
+                    <div class="dj-pdp-brand-bar mb-1">
+                        <span class="dj-product-brand" style="font-size: 0.82rem; letter-spacing: 0.06em; margin-bottom: 0;">{{ product.brand|default:"Official Brand" }}</span>
                     </div>
 
                     <!-- Title -->
                     <h1 class="dj-pdp-title">{{ product.name }}</h1>
 
-                    <!-- Price & Stock & SKU Bar -->
+                    <!-- Price & Stock Strip -->
                     <div class="dj-pdp-price-strip">
                         <span class="dj-pdp-cash-price">&#2547; {{ product.price|floatformat:"0" }}</span>
                         {% if product.regular_price and product.regular_price > product.price %}
@@ -86,51 +80,60 @@
                         {% endif %}
                         <span class="dj-pdp-divider">|</span>
                         <span>Availability: <span class="dj-pdp-instock">{% if product.in_stock %}In Stock{% else %}<span class="text-danger">Out of Stock</span>{% endif %}</span></span>
-                        <span class="dj-pdp-divider">|</span>
-                        <span class="dj-pdp-code">Code: {{ sku_code }}</span>
                     </div>
 
                     <!-- Purchase / Selection Form -->
                     <form action="{% url 'shop:cart_add' product.pk %}" method="post" id="pdp-purchase-form">
                         {% csrf_token %}
-                        <input type="hidden" name="color" id="selected-color-input" value="{% if variant_colors %}{{ variant_colors.0.name }}{% else %}Default{% endif %}">
-                        <input type="hidden" name="region" id="selected-region-input" value="{% if regions %}{{ regions.0.name }}{% else %}Default{% endif %}">
-                        <input type="hidden" name="storage" id="selected-storage-input" value="{% if storages %}{{ storages.0 }}{% else %}256GB{% endif %}">
 
-                        <!-- Color Selector -->
-                        <div class="dj-selector-box">
-                            <label class="dj-selector-label">Color:</label>
-                            <div class="dj-pills-row">
-                                {% for c in variant_colors %}
-                                <div class="dj-swatch-pill {% if forloop.first %}selected{% endif %}" onclick="selectColor(this, '{{ c.name }}')">
-                                    <span class="dot" style="background-color: {{ c.hex }};"></span>
-                                    <span>{{ c.name }}</span>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
 
-                        <!-- Region Selector -->
+                        <!-- Variant Selector (static combinations) -->
+                        <input type="hidden" name="variant" id="selected-variant-input" value="Phantom Black | 128GB | E-Sim JP">
                         <div class="dj-selector-box">
-                            <label class="dj-selector-label">Region:</label>
-                            <div class="dj-pills-row">
-                                {% for r in regions %}
-                                <div class="dj-option-pill {% if forloop.first %}selected{% endif %}" onclick="selectRegion(this, '{{ r.name }}')">
-                                    <span>{{ r.name }}</span>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
+                            <label class="dj-selector-label">Variant:</label>
+                            <div class="dj-pills-row flex-wrap gap-2" id="variant-pills-container">
+                                <!-- First 6 always visible -->
+                                <div class="dj-option-pill selected" onclick="selectVariant(this, 'Phantom Black | 128GB | E-Sim JP')"><span>Phantom Black | 128GB | E-Sim JP</span></div>
+                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 128GB | E-Sim USA')"><span>Phantom Black | 128GB | E-Sim USA</span></div>
+                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 128GB | SIM+eSim AUS')"><span>Phantom Black | 128GB | SIM+eSim AUS</span></div>
+                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 128GB | Physical Dual SIM')"><span>Phantom Black | 128GB | Physical Dual SIM</span></div>
+                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 256GB | E-Sim JP')"><span>Phantom Black | 256GB | E-Sim JP</span></div>
+                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 256GB | E-Sim USA')"><span>Phantom Black | 256GB | E-Sim USA</span></div>
 
-                        <!-- Storage Selector -->
-                        <div class="dj-selector-box">
-                            <label class="dj-selector-label">Storage:</label>
-                            <div class="dj-pills-row">
-                                {% for s in storages %}
-                                <div class="dj-option-pill {% if forloop.counter == 3 or forloop.first %}selected{% endif %}" onclick="selectStorage(this, '{{ s }}')">
-                                    <span>{{ s }}</span>
+                                <!-- Hidden variants (7–32), shown on "more" click -->
+                                <div id="variant-extra" style="display:contents;">
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 256GB | SIM+eSim AUS')"><span>Phantom Black | 256GB | SIM+eSim AUS</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 256GB | Physical Dual SIM')"><span>Phantom Black | 256GB | Physical Dual SIM</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 512GB | E-Sim JP')"><span>Phantom Black | 512GB | E-Sim JP</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 512GB | E-Sim USA')"><span>Phantom Black | 512GB | E-Sim USA</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 512GB | SIM+eSim AUS')"><span>Phantom Black | 512GB | SIM+eSim AUS</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 512GB | Physical Dual SIM')"><span>Phantom Black | 512GB | Physical Dual SIM</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 1TB | E-Sim JP')"><span>Phantom Black | 1TB | E-Sim JP</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 1TB | E-Sim USA')"><span>Phantom Black | 1TB | E-Sim USA</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 1TB | SIM+eSim AUS')"><span>Phantom Black | 1TB | SIM+eSim AUS</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 1TB | Physical Dual SIM')"><span>Phantom Black | 1TB | Physical Dual SIM</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 128GB | E-Sim JP')"><span>Titanium Gray | 128GB | E-Sim JP</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 128GB | E-Sim USA')"><span>Titanium Gray | 128GB | E-Sim USA</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 128GB | SIM+eSim AUS')"><span>Titanium Gray | 128GB | SIM+eSim AUS</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 128GB | Physical Dual SIM')"><span>Titanium Gray | 128GB | Physical Dual SIM</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 256GB | E-Sim JP')"><span>Titanium Gray | 256GB | E-Sim JP</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 256GB | E-Sim USA')"><span>Titanium Gray | 256GB | E-Sim USA</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 256GB | SIM+eSim AUS')"><span>Titanium Gray | 256GB | SIM+eSim AUS</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 256GB | Physical Dual SIM')"><span>Titanium Gray | 256GB | Physical Dual SIM</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 512GB | E-Sim JP')"><span>Titanium Gray | 512GB | E-Sim JP</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 512GB | E-Sim USA')"><span>Titanium Gray | 512GB | E-Sim USA</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 512GB | SIM+eSim AUS')"><span>Titanium Gray | 512GB | SIM+eSim AUS</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 512GB | Physical Dual SIM')"><span>Titanium Gray | 512GB | Physical Dual SIM</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 1TB | E-Sim JP')"><span>Titanium Gray | 1TB | E-Sim JP</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 1TB | E-Sim USA')"><span>Titanium Gray | 1TB | E-Sim USA</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 1TB | SIM+eSim AUS')"><span>Titanium Gray | 1TB | SIM+eSim AUS</span></div>
+                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 1TB | Physical Dual SIM')"><span>Titanium Gray | 1TB | Physical Dual SIM</span></div>
                                 </div>
-                                {% endfor %}
+
+                                <!-- More / Less toggle -->
+                                <button type="button" id="variant-more-btn" onclick="toggleVariants()" class="dj-option-pill border-0 bg-transparent" style="color: var(--primary); font-weight: 600; cursor: pointer;">
+                                    <span>+ 26 more</span>
+                                </button>
                             </div>
                         </div>
 
@@ -189,114 +192,104 @@
     <!-- Specifications & Recently Viewed -->
     <div class="row g-4 mb-5">
         
-        <!-- Left: Specifications, Description & Reviews -->
+        <!-- Left: Specifications & Reviews in Separate Standalone Cards -->
         <div class="col-lg-8">
-            <div class="card dj-pdp-panel-card overflow-hidden">
-                
-                <!-- Tab Headers -->
-                <div class="card-header bg-white border-bottom p-3">
-                    <ul class="nav nav-pills" id="pdpTabs" role="tablist">
-                        <li class="nav-item">
-                            <button class="nav-link active fw-bold rounded-pill px-4" id="specs-tab" data-bs-toggle="pill" data-bs-target="#specs-pane" type="button">
-                                Specification
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link fw-bold rounded-pill px-4" id="reviews-tab" data-bs-toggle="pill" data-bs-target="#reviews-pane" type="button">
-                                Review ({{ reviews.count }})
-                            </button>
-                        </li>
-                    </ul>
+            
+            <!-- 1. Specification Standalone Card -->
+            <div class="card dj-pdp-panel-card p-4 mb-4">
+                <h5 class="fw-bold mb-3 pb-2 border-bottom text-dark">Specification</h5>
+                <table class="dj-specs-table">
+                    <tbody>
+                        {% for key, val in specs_list %}
+                        <tr>
+                            <th>{{ key }}</th>
+                            <td>{{ val }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 2. Reviews Standalone Card -->
+            <div class="card dj-pdp-panel-card p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        Ratings & Reviews
+                        <span class="badge bg-primary text-white rounded-pill ms-2 px-2.5 py-1" style="font-size: 0.75rem;">
+                            {{ reviews.count }}
+                        </span>
+                    </h5>
+                    {% if product.avg_rating %}
+                    <div class="d-flex align-items-center gap-1 small">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <span class="fw-bold text-dark">{{ product.avg_rating|floatformat:1 }}</span>
+                        <span class="text-muted">/ 5.0</span>
+                    </div>
+                    {% endif %}
                 </div>
 
-                <div class="card-body p-4">
-                    <div class="tab-content" id="pdpTabContent">
-                        
-                        <!-- Specifications Table -->
-                        <div class="tab-pane fade show active" id="specs-pane">
-                            <h5 class="fw-bold mb-3">Specification</h5>
-                            <table class="dj-specs-table">
-                                <tbody>
-                                    {% for key, val in specs_list %}
-                                    <tr>
-                                        <th>{{ key }}</th>
-                                        <td>{{ val }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Reviews Pane -->
-                        <div class="tab-pane fade" id="reviews-pane">
-                            <div class="row g-4">
-                                <div class="col-md-7">
-                                    <h6 class="fw-bold mb-3">Verified Buyer Reviews</h6>
-                                    {% for r in reviews %}
-                                    <div class="border rounded-3 p-3 mb-2 bg-light">
-                                        <div class="d-flex align-items-center justify-content-between mb-1">
-                                            <strong class="text-dark">{{ r.customer.name }}</strong>
-                                            <div class="text-warning small">
-                                                {% for i in "12345" %}
-                                                    {% if forloop.counter <= r.rating %}
-                                                        <i class="bi bi-star-fill"></i>
-                                                    {% else %}
-                                                        <i class="bi bi-star"></i>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                        <p class="small text-secondary mb-1">{{ r.comment }}</p>
-                                        <span class="text-muted" style="font-size: 0.72rem;">{{ r.created_at|date:"M d, Y" }}</span>
-                                    </div>
-                                    {% empty %}
-                                    <p class="text-muted small">No reviews yet. Be the first to share your thoughts!</p>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="p-3 border rounded-3 bg-white">
-                                        <h6 class="fw-bold mb-2">Write a Review</h6>
-                                        {% if user.is_authenticated %}
-                                        <form action="{% url 'shop:add_review' product.pk %}" method="post">
-                                            {% csrf_token %}
-                                            <div class="mb-2">
-                                                <label class="small fw-semibold">Rating</label>
-                                                <select name="rating" class="form-select form-select-sm">
-                                                    <option value="5">5 Stars - Outstanding</option>
-                                                    <option value="4">4 Stars - Very Good</option>
-                                                    <option value="3">3 Stars - Good</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="small fw-semibold">Your Review</label>
-                                                <textarea name="comment" class="form-control form-control-sm" rows="3" required></textarea>
-                                            </div>
-                                            <button type="submit" class="btn btn-primary text-white fw-bold btn-sm w-100 rounded-pill">Submit Review</button>
-                                        </form>
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <h6 class="fw-bold mb-3">Verified Buyer Reviews</h6>
+                        {% for r in reviews %}
+                        <div class="border rounded-3 p-3 mb-2 bg-light">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <strong class="text-dark">{{ r.customer.name }}</strong>
+                                <div class="text-warning small">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= r.rating %}
+                                            <i class="bi bi-star-fill"></i>
                                         {% else %}
-                                        <p class="small text-muted mb-2">Sign in to write a verified customer review.</p>
-                                        <a href="{% url 'shop:login' %}?next={{ request.path }}" class="btn btn-outline-dark btn-sm rounded-pill w-100 fw-bold">Sign In</a>
+                                            <i class="bi bi-star"></i>
                                         {% endif %}
-                                    </div>
+                                    {% endfor %}
                                 </div>
                             </div>
+                            <p class="small text-secondary mb-1">{{ r.comment }}</p>
+                            <span class="text-muted" style="font-size: 0.72rem;">{{ r.created_at|date:"M d, Y" }}</span>
                         </div>
-
+                        {% empty %}
+                        <div class="text-center py-4 bg-light rounded-3 border">
+                            <i class="bi bi-chat-square-text text-muted fs-3 d-block mb-2"></i>
+                            <p class="text-muted small mb-0">No reviews yet. Be the first to share your thoughts!</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-5">
+                        <div class="p-3 border rounded-3 bg-white">
+                            <h6 class="fw-bold mb-2">Write a Review</h6>
+                            {% if user.is_authenticated %}
+                            <form action="{% url 'shop:add_review' product.pk %}" method="post">
+                                {% csrf_token %}
+                                <div class="mb-2">
+                                    <label class="small fw-semibold">Rating</label>
+                                    <select name="rating" class="form-select form-select-sm">
+                                        <option value="5">5 Stars - Outstanding</option>
+                                        <option value="4">4 Stars - Very Good</option>
+                                        <option value="3">3 Stars - Good</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="small fw-semibold">Your Review</label>
+                                    <textarea name="comment" class="form-control form-control-sm" rows="3" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary text-white fw-bold btn-sm w-100 rounded-pill">Submit Review</button>
+                            </form>
+                            {% else %}
+                            <p class="small text-muted mb-2">Sign in to write a verified customer review.</p>
+                            <a href="{% url 'shop:login' %}?next={{ request.path }}" class="btn btn-outline-dark btn-sm rounded-pill w-100 fw-bold">Sign In</a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
-
             </div>
+
         </div>
 
         <!-- Right: Recently Viewed Sidebar -->
         <div class="col-lg-4">
             <div class="card dj-pdp-panel-card p-4 sticky-lg-top" style="top: 90px; z-index: 10;">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-bold mb-0 text-dark">Recently Viewed</h5>
-                    <button type="button" id="dj-clear-recent-btn" class="btn btn-sm text-muted p-0 text-decoration-none d-none" style="font-size: 0.78rem;" onclick="clearRecentlyViewed()">
-                        <i class="bi bi-trash3 me-1"></i>Clear
-                    </button>
-                </div>
+                <h5 class="fw-bold mb-3 text-dark">Recently Viewed</h5>
                 <div id="dj-recently-viewed-list">
                     <!-- Injected dynamically via LocalStorage -->
                 </div>
@@ -397,23 +390,27 @@ function changeMainImage(src, el) {
     el.style.borderColor = 'var(--primary)';
 }
 
-function selectColor(el, name) {
-    document.querySelectorAll('.dj-swatch-pill').forEach(p => p.classList.remove('selected'));
+function selectVariant(el, value) {
+    document.querySelectorAll('.dj-option-pill').forEach(p => p.classList.remove('selected'));
     el.classList.add('selected');
-    document.getElementById('selected-color-input').value = name;
+    document.getElementById('selected-variant-input').value = value;
 }
 
-function selectRegion(el, name) {
-    document.querySelectorAll('.dj-selector-box:nth-of-type(2) .dj-option-pill').forEach(p => p.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('selected-region-input').value = name;
+function toggleVariants() {
+    const extra = document.getElementById('variant-extra');
+    const btn = document.getElementById('variant-more-btn');
+    const isHidden = extra.dataset.hidden === '1';
+    extra.querySelectorAll('.dj-option-pill').forEach(p => p.style.display = isHidden ? '' : 'none');
+    extra.dataset.hidden = isHidden ? '0' : '1';
+    btn.querySelector('span').textContent = isHidden ? '− Show less' : '+ 26 more';
 }
 
-function selectStorage(el, name) {
-    document.querySelectorAll('.dj-selector-box:nth-of-type(3) .dj-option-pill').forEach(p => p.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('selected-storage-input').value = name;
-}
+// Hide extra variants on load
+document.addEventListener('DOMContentLoaded', function () {
+    const extra = document.getElementById('variant-extra');
+    extra.querySelectorAll('.dj-option-pill').forEach(p => p.style.display = 'none');
+    extra.dataset.hidden = '1';
+});
 
 function stepQty(delta) {
     const input = document.getElementById('pdp-qty-input');
@@ -458,11 +455,9 @@ function submitShopNow() {
 
     const listContainer = document.getElementById('dj-recently-viewed-list');
     const emptyState = document.getElementById('dj-recently-viewed-empty');
-    const clearBtn = document.getElementById('dj-clear-recent-btn');
 
     if (otherItems.length > 0) {
         emptyState.classList.add('d-none');
-        clearBtn.classList.remove('d-none');
         listContainer.innerHTML = otherItems.map(item => `
             <div class="dj-recent-card" onclick="window.location.href='${item.url}'" style="cursor: pointer;">
                 <a href="${item.url}" class="d-inline-flex align-items-center justify-content-center flex-shrink-0 text-decoration-none" onclick="event.stopPropagation();">
@@ -479,7 +474,6 @@ function submitShopNow() {
         `).join('');
     } else {
         emptyState.classList.remove('d-none');
-        clearBtn.classList.add('d-none');
         listContainer.innerHTML = '';
     }
 
@@ -490,15 +484,26 @@ function submitShopNow() {
     } catch (e) {
         console.warn('LocalStorage unavailable:', e);
     }
+})();
 
-    window.clearRecentlyViewed = function() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify([currentProduct]));
-        } catch (e) {}
-        listContainer.innerHTML = '';
-        emptyState.classList.remove('d-none');
-        clearBtn.classList.add('d-none');
-    };
+// ── Interactive Hover Zoom for Main Product Image ──────────────────
+(function initImageZoom() {
+    const wrap = document.getElementById('main-product-img-wrapper');
+    const img = document.getElementById('main-product-image');
+    if (!wrap || !img) return;
+
+    wrap.addEventListener('mousemove', function(e) {
+        const rect = wrap.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        img.style.transformOrigin = `${x}% ${y}%`;
+        img.style.transform = 'scale(2)';
+    });
+
+    wrap.addEventListener('mouseleave', function() {
+        img.style.transform = 'scale(1)';
+        img.style.transformOrigin = 'center center';
+    });
 })();
 </script>
 {% endblock %}

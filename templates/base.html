@@ -9,6 +9,13 @@
     <meta name="description"
         content="{% block meta_description %}djCommerce is one of Bangladesh's premier gadget and smartphone destinations. Shop the latest genuine phones, accessories, and electronics with official warranty and fast delivery.{% endblock %}">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -137,8 +144,8 @@
                             <ul class="dropdown-menu dropdown-menu-end dj-user-dropdown-menu">
                                 <li>
                                     <a class="dropdown-item" href="{% url 'shop:dashboard' %}">
-                                        <i class="bi bi-speedometer2 text-primary"></i>
-                                        <span>My Dashboard &amp; Orders</span>
+                                        <i class="bi bi-layout-text-sidebar-reverse text-primary"></i>
+                                        <span>Dashboard</span>
                                     </a>
                                 </li>
                                 {% if user.is_staff %}
@@ -208,11 +215,6 @@
                     <a href="{% url 'shop:home' %}#best-offers" class="dj-cat-item text-danger">
                         <i class="bi bi-tags-fill text-danger"></i>
                         <span>Best Offers & Deals</span>
-                    </a>
-                    <a href="{% url 'shop:order_lookup' %}"
-                        class="dj-cat-item {% if request.resolver_match.url_name == 'order_lookup' %}active{% endif %}">
-                        <i class="bi bi-truck text-info"></i>
-                        <span>Track Order</span>
                     </a>
                     <a href="{% url 'shop:home' %}#contact" class="dj-cat-item">
                         <i class="bi bi-headset text-primary"></i>
@@ -365,7 +367,7 @@
                             <i class="bi bi-geo-alt-fill dj-contact-icon"></i>
                             <div>
                                 <strong class="dj-contact-label">Shop Address:</strong>
-                                <span class="dj-contact-value">Shop #45-46, Level 5, Block B, Bashundhara City Shopping Mall, Panthapath, Dhaka-1205</span>
+                                <span class="dj-contact-value">Shop #45, Level 5, Block B, Bashundhara City Shopping Mall, Panthapath, Dhaka-1205</span>
                             </div>
                         </li>
                         <li>

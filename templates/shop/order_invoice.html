@@ -1,0 +1,323 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice #{{ order_number }} - djCommerce</title>
+    <!-- Website Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            font-size: 11pt;
+            color: #1a202c;
+            background: #f0f4f8;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .invoice-page {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .inv-header {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            color: #ffffff;
+            padding: 22px 30px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .inv-brand { display: flex; align-items: center; gap: 14px; }
+        .inv-brand-icon {
+            width: 44px; height: 44px;
+            background: transparent;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.20);
+            flex-shrink: 0;
+        }
+        .inv-brand-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+        .inv-brand-name { font-size: 20pt; font-weight: 800; letter-spacing: -0.5px; }
+        .inv-brand-sub { font-size: 8pt; color: rgba(255,255,255,0.8); margin-top: 1px; }
+        .inv-title-block { text-align: right; }
+        .inv-title-label { font-size: 14pt; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #ffffff; }
+        .inv-number { font-size: 9pt; color: rgba(255,255,255,0.85); margin-top: 4px; }
+        .inv-number span { color: #fff; font-weight: 700; }
+        .inv-meta {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 8.5pt;
+            color: #64748b;
+        }
+        .inv-meta strong { color: #1a202c; }
+        .inv-status-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 8pt;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .inv-status-badge.pending { background: #fef9c3; color: #854d0e; border-color: #fef08a; }
+        .inv-status-badge.processing { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+        .inv-status-badge.shipped { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+        .inv-status-badge.cancelled { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        .inv-body { padding: 20px 30px 16px; }
+        .inv-parties { display: flex; gap: 20px; margin-bottom: 16px; }
+        .inv-party { flex: 1; }
+        .inv-party-label {
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #2563eb;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1.5px solid #dbeafe;
+        }
+        .inv-party-name { font-weight: 700; font-size: 10pt; color: #1a202c; margin-bottom: 2px; }
+        .inv-party-line { font-size: 8.5pt; color: #64748b; line-height: 1.5; }
+        .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+        .inv-table thead tr { background: #2563eb; color: #ffffff; }
+        .inv-table thead th { padding: 8px 10px; font-size: 8pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .inv-table tbody tr { border-bottom: 1px solid #f1f5f9; }
+        .inv-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .inv-table tbody td { padding: 8px 10px; font-size: 9pt; vertical-align: middle; }
+        .inv-table tbody td .prod-name { font-weight: 600; color: #1a202c; }
+        .inv-table tbody td .prod-meta { font-size: 7.5pt; color: #2563eb; margin-top: 1px; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .inv-totals-wrap { display: flex; justify-content: flex-end; }
+        .inv-totals {
+            width: 260px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        .inv-totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 12px;
+            font-size: 8.5pt;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .inv-totals-row:last-child { border-bottom: none; }
+        .inv-totals-row .lbl { color: #64748b; }
+        .inv-totals-row .val { font-weight: 600; color: #1a202c; }
+        .inv-totals-row.grand { background: #2563eb; }
+        .inv-totals-row.grand .lbl, .inv-totals-row.grand .val { color: #fff; font-weight: 700; font-size: 10pt; }
+        .inv-totals-row.paid-row .val { color: #16a34a; }
+        .inv-totals-row.due-row .val { color: #dc2626; }
+        .inv-footer-band {
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            padding: 14px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .inv-warranty-note { font-size: 7.5pt; color: #64748b; max-width: 380px; line-height: 1.5; }
+        .inv-warranty-note strong { color: #1e40af; }
+        .inv-sig-block { text-align: right; }
+        .inv-sig-line { font-size: 8pt; color: #94a3b8; border-top: 1px solid #cbd5e1; padding-top: 4px; margin-top: 18px; width: 160px; text-align: center; }
+        .print-actions {
+            max-width: 800px;
+            margin: 16px auto;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn-print, .btn-back {
+            padding: 10px 28px;
+            border-radius: 50px;
+            font-size: 10pt;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s ease;
+        }
+        .btn-print { background: #2563eb; color: #fff; }
+        .btn-print:hover { background: #1d4ed8; }
+        .btn-back { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .btn-back:hover { background: #e2e8f0; }
+        @media print {
+            html, body { background: #ffffff !important; margin: 0 !important; padding: 0 !important; font-size: 9pt !important; }
+            .print-actions { display: none !important; }
+            .invoice-page { max-width: 100% !important; margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; border: none !important; }
+            @page { size: A4; margin: 12mm 10mm 10mm 10mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-actions">
+        <a href="{% url 'shop:order_detail' order_number %}" class="btn-back">&#8592; Back to Order</a>
+        <button class="btn-print" onclick="window.print()">&#128424; Print Invoice</button>
+    </div>
+
+    <div class="invoice-page">
+        <div class="inv-header">
+            <div class="inv-brand">
+                <div class="inv-brand-icon">
+                    <img src="{% static 'images/logo.png' %}" alt="djCommerce Logo">
+                </div>
+                <div>
+                    <div class="inv-brand-name">dj<span style="color:#dbeafe;">Commerce</span></div>
+                    <div class="inv-brand-sub">Authorized Flagship Smartphone Store &bull; Dhaka, Bangladesh</div>
+                </div>
+            </div>
+            <div class="inv-title-block">
+                <div class="inv-title-label">Purchase Invoice</div>
+                <div class="inv-number">Invoice #: <span>{{ order_number }}</span></div>
+                <div class="inv-number">Date: <span>{{ order_date|date:"d M Y, h:i A" }}</span></div>
+            </div>
+        </div>
+
+        <div class="inv-meta">
+            <div>
+                Payment: <strong>{{ payment_method }}</strong>
+                &nbsp;&middot;&nbsp;
+                Store: <strong>djcommerce.com</strong>
+                &nbsp;&middot;&nbsp;
+                Support: <strong>support@djcommerce.com</strong>
+            </div>
+            <div>
+                {% with status_lower=status|lower %}
+                <span class="inv-status-badge {% if status_lower == 'pending' %}pending{% elif status_lower == 'processing' %}processing{% elif status_lower == 'shipped' %}shipped{% elif status_lower == 'cancelled' %}cancelled{% endif %}">
+                    {{ status }}
+                </span>
+                {% endwith %}
+            </div>
+        </div>
+
+        <div class="inv-body">
+            <div class="inv-parties">
+                <div class="inv-party">
+                    <div class="inv-party-label">Billed To / Customer</div>
+                    <div class="inv-party-name">{{ customer.get_full_name|default:customer.name }}</div>
+                    {% if customer.phone %}<div class="inv-party-line">&#128222; {{ customer.phone }}</div>{% endif %}
+                    {% if customer.email %}<div class="inv-party-line">&#9993; {{ customer.email }}</div>{% endif %}
+                </div>
+                <div class="inv-party">
+                    <div class="inv-party-label">Ship To / Delivery Address</div>
+                    {% if delivery_address %}
+                        <div class="inv-party-name">{{ delivery_address.address_line }}</div>
+                        <div class="inv-party-line">{{ delivery_address.city }}{% if delivery_address.postal_code %} - {{ delivery_address.postal_code }}{% endif %}, {{ delivery_address.country }}</div>
+                    {% elif customer.address %}
+                        <div class="inv-party-name" style="white-space:pre-line;">{{ customer.address }}</div>
+                    {% else %}
+                        <div class="inv-party-line" style="color:#94a3b8;">Standard Delivery</div>
+                    {% endif %}
+                </div>
+                <div class="inv-party">
+                    <div class="inv-party-label">Sold By</div>
+                    <div class="inv-party-name">djCommerce Store</div>
+                    <div class="inv-party-line">Dhaka, Bangladesh</div>
+                    <div class="inv-party-line">Web: djcommerce.com</div>
+                    <div class="inv-party-line">Email: support@djcommerce.com</div>
+                </div>
+            </div>
+
+            <table class="inv-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product Description</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-right">Unit Price</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <div class="prod-name">{{ order.product.name }}</div>
+                            {% if order.variant %}<div class="prod-meta">Variant: {{ order.variant.name }}</div>{% endif %}
+                            {% if order.product.brand %}<div class="prod-meta">Brand: {{ order.product.brand }}</div>{% endif %}
+                        </td>
+                        <td class="text-center">{{ order.quantity }}</td>
+                        <td class="text-right">&#2547; {{ order.product.price|floatformat:"0" }}</td>
+                        <td class="text-right"><strong>&#2547; {{ order.total_price|floatformat:"0" }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="inv-totals-wrap">
+                <div class="inv-totals">
+                    <div class="inv-totals-row">
+                        <span class="lbl">Subtotal</span>
+                        <span class="val">&#2547; {{ subtotal|floatformat:"0" }}</span>
+                    </div>
+                    <div class="inv-totals-row">
+                        <span class="lbl">Delivery Charges</span>
+                        <span class="val">&#2547; {{ delivery_charge|floatformat:"0" }}</span>
+                    </div>
+                    <div class="inv-totals-row">
+                        <span class="lbl">VAT / Tax</span>
+                        <span class="val" style="color:#64748b;">Included (&#2547; {{ vat_amount|default:"0" }})</span>
+                    </div>
+                    <div class="inv-totals-row grand">
+                        <span class="lbl">Grand Total</span>
+                        <span class="val">&#2547; {{ grand_total|floatformat:"0" }}</span>
+                    </div>
+                    <div class="inv-totals-row paid-row">
+                        <span class="lbl">Amount Paid</span>
+                        <span class="val">&#2547; {{ amount_paid|floatformat:"0" }}</span>
+                    </div>
+                    <div class="inv-totals-row due-row">
+                        <span class="lbl">Amount Due</span>
+                        <span class="val">&#2547; {{ amount_due|floatformat:"0" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="inv-footer-band">
+            <div class="inv-warranty-note">
+                <strong>&#9989; Official djCommerce Warranty Covered:</strong> All devices are genuine
+                factory-sealed stock with 1-Year Official Warranty Support. Please retain this invoice
+                for any service or warranty claims. Thank you for shopping with djCommerce!
+            </div>
+            <div class="inv-sig-block">
+                <div style="height:28px;"></div>
+                <div class="inv-sig-line">Authorized Signature / Stamp</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() { window.print(); });
+    </script>
+</body>
+</html>

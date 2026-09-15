@@ -187,7 +187,104 @@ class AddressForm(forms.ModelForm):
         }
 
 
-class CheckoutForm(forms.ModelForm):
+class CheckoutForm(forms.Form):
+    # Non-editable recipient information (pre-filled from profile)
+    first_name = forms.CharField(
+        label="First Name",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control bg-light text-dark fw-medium',
+            'readonly': 'readonly',
+            'id': 'checkout-first-name'
+        })
+    )
+    last_name = forms.CharField(
+        label="Last Name",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control bg-light text-dark fw-medium',
+            'readonly': 'readonly',
+            'id': 'checkout-last-name'
+        })
+    )
+    email = forms.EmailField(
+        label="Email",
+        required=False,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control bg-light text-dark fw-medium',
+            'readonly': 'readonly',
+            'id': 'checkout-email'
+        })
+    )
+    phone = forms.CharField(
+        label="Phone",
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control bg-light text-dark fw-medium',
+            'readonly': 'readonly',
+            'id': 'checkout-phone'
+        })
+    )
+
+    # Editable shipping address fields
+    street_address = forms.CharField(
+        label="Street Address / Road / House",
+        max_length=500,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'House #, Road #, Flat / Apartment / Area',
+            'id': 'checkout-street-address',
+            'required': 'required'
+        })
+    )
+    city = forms.CharField(
+        label="City / Division",
+        max_length=255,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. Dhaka, Chittagong, Sylhet',
+            'id': 'checkout-city',
+            'required': 'required'
+        })
+    )
+    postal_code = forms.CharField(
+        label="Postal Code",
+        max_length=20,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. 1212',
+            'id': 'checkout-postal-code',
+            'required': 'required'
+        })
+    )
+    country = forms.CharField(
+        label="Country",
+        max_length=255,
+        required=True,
+        initial="Bangladesh",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. Bangladesh',
+            'id': 'checkout-country',
+            'required': 'required'
+        })
+    )
+
+    saved_address_id = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'selected-address-id'})
+    )
+    save_to_address_book = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_save_to_address_book'})
+    )
     payment_method = forms.ChoiceField(
         choices=[
             ('cod', 'Cash on Delivery'),
@@ -196,54 +293,6 @@ class CheckoutForm(forms.ModelForm):
         widget=forms.RadioSelect,
         initial='cod'
     )
-    saved_address_id = forms.CharField(required=False, widget=forms.HiddenInput())
-    save_to_address_book = forms.BooleanField(
-        required=False,
-        initial=True,
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_save_to_address_book'})
-    )
-
-    class Meta:
-        model = Customer
-        fields = ['name', 'phone', 'address', 'email']
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter your full name',
-                'required': 'required',
-                'id': 'checkout-name'
-            }),
-            'phone': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g. +880 1712-345678',
-                'required': 'required',
-                'id': 'checkout-phone'
-            }),
-            'address': forms.Textarea(attrs={
-                'class': 'form-control',
-                'placeholder': 'House/Road, Area, City, Postal Code',
-                'rows': 3,
-                'required': 'required',
-                'id': 'checkout-address'
-            }),
-            'email': forms.EmailInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'name@example.com (optional)',
-                'id': 'checkout-email'
-            }),
-        }
-        labels = {
-            'name': 'Full Name',
-            'phone': 'Phone Number',
-            'address': 'Delivery Address',
-            'email': 'Email Address (Optional)',
-        }
-
-    def clean_phone(self):
-        phone = self.cleaned_data.get('phone', '').strip()
-        if len(phone) < 6:
-            raise forms.ValidationError("Please enter a valid phone number.")
-        return phone
 
 
 class ReviewForm(forms.ModelForm):

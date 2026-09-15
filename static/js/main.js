@@ -240,36 +240,27 @@ function initCheckoutValidation() {
     if (!checkoutForm) return;
 
     checkoutForm.addEventListener('submit', (e) => {
-        const phoneInput = document.getElementById('checkout-phone');
-        const nameInput = document.getElementById('checkout-name');
-        const addressInput = document.getElementById('checkout-address');
+        const streetInput = document.getElementById('checkout-street-address');
+        const cityInput = document.getElementById('checkout-city');
+        const postalInput = document.getElementById('checkout-postal-code');
+        const countryInput = document.getElementById('checkout-country');
 
         let isValid = true;
 
-        if (!nameInput.value.trim()) {
-            nameInput.classList.add('is-invalid');
-            isValid = false;
-        } else {
-            nameInput.classList.remove('is-invalid');
-        }
-
-        if (!phoneInput.value.trim() || phoneInput.value.trim().length < 6) {
-            phoneInput.classList.add('is-invalid');
-            isValid = false;
-        } else {
-            phoneInput.classList.remove('is-invalid');
-        }
-
-        if (!addressInput.value.trim() || addressInput.value.trim().length < 10) {
-            addressInput.classList.add('is-invalid');
-            isValid = false;
-        } else {
-            addressInput.classList.remove('is-invalid');
-        }
+        [streetInput, cityInput, postalInput, countryInput].forEach(input => {
+            if (input) {
+                if (!input.value.trim()) {
+                    input.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            }
+        });
 
         if (!isValid) {
             e.preventDefault();
-            showToast("Please fill in all required fields properly.", "warning");
+            showToast("Please fill in all required shipping address fields.", "warning");
         }
     });
 }

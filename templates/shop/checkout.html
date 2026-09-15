@@ -69,28 +69,76 @@
                         Please provide accurate delivery information for swift courier dispatch.
                     </p>
 
-                    <!-- Saved Addresses Selector (Address Book) -->
+                    <!-- Recipient Information (Readonly) -->
+                    <div class="mb-4 p-3 bg-light rounded-3 border">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="small fw-bold text-dark text-uppercase">
+                                <i class="bi bi-person-badge text-primary me-1"></i> Recipient Information
+                            </span>
+                            <a href="{% url 'shop:profile_edit' %}" class="small text-primary text-decoration-none fw-semibold">
+                                <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                            </a>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <!-- First Name -->
+                            <div class="col-md-6">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label small fw-semibold text-muted mb-1">
+                                    First Name
+                                </label>
+                                {{ form.first_name }}
+                            </div>
+
+                            <!-- Last Name -->
+                            <div class="col-md-6">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label small fw-semibold text-muted mb-1">
+                                    Last Name
+                                </label>
+                                {{ form.last_name }}
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <label for="{{ form.email.id_for_label }}" class="form-label small fw-semibold text-muted mb-1">
+                                    Email
+                                </label>
+                                {{ form.email }}
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-md-6">
+                                <label for="{{ form.phone.id_for_label }}" class="form-label small fw-semibold text-muted mb-1">
+                                    Phone
+                                </label>
+                                {{ form.phone }}
+                            </div>
+                        </div>
+                        <div class="small text-muted fst-italic" style="font-size: 0.78rem;">
+                            <i class="bi bi-info-circle me-1"></i> First Name, Last Name, Email, and Phone are non-editable here. Please update them from <a href="{% url 'shop:profile_edit' %}" class="text-decoration-none fw-semibold">Edit Profile</a> if needed.
+                        </div>
+                    </div>
+
+                    <!-- Saved Addresses Selector (Address Book) - Placed after Recipient Information -->
                     {% if saved_addresses %}
                     <div class="mb-4 pb-3 border-bottom">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <label class="form-label fw-bold small text-uppercase text-dark mb-0">
-                                <i class="bi bi-journal-bookmark-fill text-primary me-1.5"></i> Saved Address Book:
+                                <i class="bi bi-journal-bookmark-fill text-primary me-1.5"></i> Saved Address Book ({{ saved_addresses|length }}/3):
                             </label>
-                            <a href="{% url 'shop:dashboard' %}" class="small text-primary text-decoration-none fw-semibold">
-                                <i class="bi bi-pencil-square me-1"></i>Edit in Profile
+                            <a href="{% url 'shop:dashboard' %}#addresses" class="small text-primary text-decoration-none fw-semibold">
+                                <i class="bi bi-pencil-square me-1"></i>Manage Addresses
                             </a>
                         </div>
                         <div class="dj-saved-address-grid">
                             {% for addr in saved_addresses %}
                             <div class="dj-saved-address-card address-choice-card {% if form.saved_address_id.value|stringformat:'s' == addr.id|stringformat:'s' or not form.saved_address_id.value and forloop.first %}selected{% endif %}" 
-                                 onclick="selectSavedAddress('{{ addr.id }}', '{{ addr.address_line|escapejs }}{% if addr.city %}, {{ addr.city|escapejs }}{% endif %}{% if addr.country %}, {{ addr.country|escapejs }}{% endif %}', this);">
+                                 onclick="selectSavedAddress('{{ addr.id }}', '{{ addr.address_line|escapejs }}', '{{ addr.city|escapejs }}', '{{ addr.postal_code|escapejs }}', '{{ addr.country|escapejs }}', this);">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <strong class="small text-dark"><i class="bi bi-geo-alt text-primary me-1"></i>{{ addr.city }}, {{ addr.country }}</strong>
                                     {% if addr.is_default %}
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">Default</span>
                                     {% endif %}
                                 </div>
-                                <p class="small text-muted mb-1">{{ addr.address_line }}</p>
+                                <p class="small text-muted mb-1">{{ addr.address_line }}{% if addr.postal_code %}, {{ addr.postal_code }}{% endif %}</p>
                                 <span class="small text-primary fw-semibold"><i class="bi bi-check2-circle me-1"></i>Deliver Here</span>
                             </div>
                             {% endfor %}
@@ -106,68 +154,77 @@
                     </div>
                     {% endif %}
 
-                    <!-- Form Inputs Grid -->
-                    <div class="row g-3 mb-3">
-                        <!-- Full Name -->
-                        <div class="col-md-6">
-                            <label for="{{ form.name.id_for_label }}" class="form-label">
-                                <i class="bi bi-person text-secondary"></i> Full Name <span class="text-danger">*</span>
-                            </label>
-                            {{ form.name }}
-                            {% if form.name.errors %}
-                                <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Phone Number -->
-                        <div class="col-md-6">
-                            <label for="{{ form.phone.id_for_label }}" class="form-label">
-                                <i class="bi bi-telephone text-secondary"></i> Phone Number <span class="text-danger">*</span>
-                            </label>
-                            {{ form.phone }}
-                            {% if form.phone.errors %}
-                                <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Delivery Address -->
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <label for="{{ form.address.id_for_label }}" class="form-label mb-0">
-                                <i class="bi bi-geo-alt text-secondary"></i> Complete Delivery Address <span class="text-danger">*</span>
+                    <!-- Shipping Address Fields (Editable) -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-bold text-dark mb-0">
+                                <i class="bi bi-geo-alt-fill text-primary me-1"></i> Delivery Address
                             </label>
                             {% if saved_addresses %}
-                            <span class="small text-muted" style="font-size: 0.78rem;">Selected from Address Book or edit manually</span>
+                            <span class="small text-muted" style="font-size: 0.78rem;">Select from Address Book above or edit fields below</span>
                             {% endif %}
                         </div>
-                        {{ form.address }}
-                        {% if form.address.errors %}
-                            <div class="invalid-feedback d-block">{{ form.address.errors.0 }}</div>
-                        {% endif %}
-                        <div class="form-text small text-muted">Include flat/house number, street name, area, and city.</div>
 
-                        <!-- Save this address to Address Book Option -->
-                        <div class="mt-2">
-                            <label class="dj-save-address-btn {% if form.save_to_address_book.value %}checked{% endif %}" for="id_save_to_address_book">
-                                <input type="checkbox" name="save_to_address_book" id="id_save_to_address_book" {% if form.save_to_address_book.value %}checked{% endif %}>
-                                <span>
-                                    <i class="bi bi-bookmark-check-fill"></i>
-                                    Save this address to Address Book for future orders
-                                </span>
-                            </label>
+                        <div class="row g-3">
+                            <!-- Street Address / Road / House * -->
+                            <div class="col-12">
+                                <label for="{{ form.street_address.id_for_label }}" class="form-label small fw-semibold text-dark mb-1">
+                                    Street Address / Road / House <span class="text-danger">*</span>
+                                </label>
+                                {{ form.street_address }}
+                                {% if form.street_address.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.street_address.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- City / Division * -->
+                            <div class="col-md-4">
+                                <label for="{{ form.city.id_for_label }}" class="form-label small fw-semibold text-dark mb-1">
+                                    City / Division <span class="text-danger">*</span>
+                                </label>
+                                {{ form.city }}
+                                {% if form.city.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.city.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Postal Code * -->
+                            <div class="col-md-4">
+                                <label for="{{ form.postal_code.id_for_label }}" class="form-label small fw-semibold text-dark mb-1">
+                                    Postal Code <span class="text-danger">*</span>
+                                </label>
+                                {{ form.postal_code }}
+                                {% if form.postal_code.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.postal_code.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Country * -->
+                            <div class="col-md-4">
+                                <label for="{{ form.country.id_for_label }}" class="form-label small fw-semibold text-dark mb-1">
+                                    Country <span class="text-danger">*</span>
+                                </label>
+                                {{ form.country }}
+                                {% if form.country.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.country.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Email Address -->
-                    <div class="mb-4">
-                        <label for="{{ form.email.id_for_label }}" class="form-label">
-                            <i class="bi bi-envelope text-secondary"></i> Email Address <span class="text-muted fw-normal small">(For e-receipt &amp; order tracking)</span>
-                        </label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                            <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
-                        {% endif %}
+                        <!-- Save Address Checkbox directly below address fields -->
+                        <div class="form-check mt-3" id="save-address-container">
+                            <input class="form-check-input" type="checkbox" name="save_to_address_book" id="id_save_to_address_book" {% if form.save_to_address_book.value and saved_addresses|length < 3 %}checked{% endif %} {% if saved_addresses|length >= 3 %}disabled{% endif %}>
+                            <label class="form-check-label text-dark fw-medium small" for="id_save_to_address_book" id="save-address-label" style="cursor: pointer;">
+                                Save this address to Address Book for future orders
+                            </label>
+                            {% if saved_addresses|length >= 3 %}
+                                <div class="text-muted small mt-1" id="save-address-hint" style="font-size: 0.78rem;">
+                                    <i class="bi bi-info-circle me-1"></i> Address book limit reached (3/3 saved). Manage in your Profile.
+                                </div>
+                            {% else %}
+                                <div class="text-muted small mt-1 d-none" id="save-address-hint" style="font-size: 0.78rem;"></div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <hr class="my-4" style="border-top: 1px dashed #e2e8f0;">
@@ -181,42 +238,69 @@
                         Choose your preferred payment method. All transactions are securely processed.
                     </p>
 
-                    <div class="dj-payment-options-grid">
+                    <div class="dj-payment-options-grid mb-4">
                         <!-- Option 1: Cash on Delivery -->
-                        <div class="dj-payment-card-option active" id="card-option-cod" onclick="selectPaymentOption('cod');">
+                        <div class="dj-payment-card-option dj-payment-card {% if form.payment_method.value == 'cod' or not form.payment_method.value %}active{% endif %}" 
+                             id="card-option-cod" onclick="selectPaymentOption('cod');">
                             <div class="dj-payment-card-left">
-                                <input class="form-check-input" type="radio" name="payment_method" id="pay-cod" value="cod" checked>
+                                <input type="radio" name="payment_method" value="cod" id="pay-cod" class="dj-payment-radio form-check-input" 
+                                       {% if form.payment_method.value == 'cod' or not form.payment_method.value %}checked{% endif %}>
                                 <div class="dj-payment-card-icon cod">
-                                    <i class="bi bi-cash-coin"></i>
+                                    <i class="bi bi-cash-stack"></i>
                                 </div>
                                 <div>
                                     <div class="dj-payment-card-title">Cash on Delivery (COD)</div>
-                                    <p class="dj-payment-card-desc">Pay with cash or mobile wallet upon receiving your package.</p>
+                                    <p class="dj-payment-card-desc">Pay with cash when your shipment arrives at your doorstep.</p>
                                 </div>
                             </div>
-                            <div class="dj-payment-card-right d-none d-sm-flex">
-                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small">
+                            <div class="dj-payment-card-right">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small px-2.5 py-1">
                                     Zero Extra Fee
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Option 2: Stripe Online Card Payment -->
-                        <div class="dj-payment-card-option" id="card-option-stripe" onclick="selectPaymentOption('stripe');">
+                        <!-- Option 2: Credit / Debit Card (Stripe) -->
+                        <div class="dj-payment-card-option dj-payment-card {% if form.payment_method.value == 'stripe' %}active{% endif %}" 
+                             id="card-option-stripe" onclick="selectPaymentOption('stripe');">
                             <div class="dj-payment-card-left">
-                                <input class="form-check-input" type="radio" name="payment_method" id="pay-stripe" value="stripe">
+                                <input type="radio" name="payment_method" value="stripe" id="pay-stripe" class="dj-payment-radio form-check-input"
+                                       {% if form.payment_method.value == 'stripe' %}checked{% endif %}>
                                 <div class="dj-payment-card-icon stripe">
                                     <i class="bi bi-credit-card-2-front-fill"></i>
                                 </div>
                                 <div>
-                                    <div class="dj-payment-card-title">Credit / Debit Card (Stripe)</div>
-                                    <p class="dj-payment-card-desc">Instant &amp; encrypted card processing powered by Stripe.</p>
+                                    <div class="dj-payment-card-title">Online Payment</div>
+                                    <p class="dj-payment-card-desc">Secure Stripe Payment</p>
                                 </div>
                             </div>
-                            <div class="dj-payment-card-right d-none d-sm-flex">
-                                <span class="badge bg-white text-secondary border rounded px-2 py-1 small fw-semibold">Visa</span>
-                                <span class="badge bg-white text-secondary border rounded px-2 py-1 small fw-semibold">Mastercard</span>
-                                <span class="badge bg-white text-secondary border rounded px-2 py-1 small fw-semibold">Amex</span>
+                            <div class="dj-payment-card-right">
+                                <div class="dj-payment-gateways-wrap">
+                                    <div class="dj-payment-mini-badge" title="Visa">
+                                        <img src="{% static 'images/payments/visa.png' %}" alt="Visa">
+                                    </div>
+                                    <div class="dj-payment-mini-badge" title="Mastercard">
+                                        <img src="{% static 'images/payments/mastercard.png' %}" alt="Mastercard">
+                                    </div>
+                                    <div class="dj-payment-mini-badge" title="American Express">
+                                        <img src="{% static 'images/payments/amex.png' %}" alt="American Express">
+                                    </div>
+                                    <div class="dj-payment-mini-badge" title="JCB">
+                                        <img src="{% static 'images/payments/jcb.png' %}" alt="JCB">
+                                    </div>
+                                    <div class="dj-payment-mini-badge" title="Diners Club">
+                                        <img src="{% static 'images/payments/dinersclub.png' %}" alt="Diners Club">
+                                    </div>
+                                    <div class="dj-payment-mini-badge" title="Apple Pay">
+                                        <img src="{% static 'images/payments/apple-pay.png' %}" alt="Apple Pay">
+                                    </div>
+                                    <div class="dj-payment-mini-badge" title="Google Pay">
+                                        <img src="{% static 'images/payments/google-pay.png' %}" alt="Google Pay">
+                                    </div>
+                                    <div class="dj-payment-mini-badge" title="Stripe">
+                                        <img src="{% static 'images/payments/stripe.png' %}" alt="Stripe">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -225,7 +309,7 @@
                     <button type="submit" class="dj-btn-checkout-submit" id="checkout-submit-btn">
                         <span class="btn-text d-flex align-items-center justify-content-center gap-2">
                             <i class="bi bi-shield-lock-fill fs-5"></i>
-                            <span>Confirm Order &bull; &#2547; {{ cart.get_grand_total|floatformat:"0" }}</span>
+                            <span>Confirm Order</span>
                         </span>
                         <span class="btn-loading d-none align-items-center justify-content-center gap-2">
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -266,15 +350,19 @@
                 <div class="dj-checkout-items-list">
                     {% for item in cart %}
                     <div class="dj-checkout-item">
-                        <div class="dj-checkout-item-thumb">
+                        <a href="{% url 'shop:product_detail' item.product.id %}" class="dj-checkout-item-thumb d-block text-decoration-none" title="{{ item.product.name }}">
                             {% if item.product.image %}
                                 <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" loading="lazy">
                             {% else %}
                                 <i class="bi bi-phone text-muted fs-5"></i>
                             {% endif %}
-                        </div>
+                        </a>
                         <div class="flex-grow-1 min-w-0">
-                            <h3 class="dj-checkout-item-name text-truncate">{{ item.product.name }}</h3>
+                            <h3 class="dj-checkout-item-name text-truncate">
+                                <a href="{% url 'shop:product_detail' item.product.id %}" class="text-decoration-none text-dark" title="{{ item.product.name }}">
+                                    {{ item.product.name }}
+                                </a>
+                            </h3>
                             <div class="d-flex align-items-center gap-2">
                                 {% if item.variant %}
                                     <span class="badge bg-light text-secondary border small py-0.5 px-1.5">{{ item.variant.name }}</span>
@@ -348,7 +436,77 @@ function selectPaymentOption(method) {
     }
 }
 
-function selectSavedAddress(addressId, addressText, cardElem) {
+const currentSavedCount = {{ saved_addresses|length }};
+let selectedSavedData = {
+    id: '{{ form.saved_address_id.value|default:"" }}',
+    street: '',
+    city: '',
+    postal: '',
+    country: ''
+};
+
+function updateSelectedData(id, street, city, postal, country) {
+    selectedSavedData = {
+        id: id || '',
+        street: (street || '').trim().toLowerCase(),
+        city: (city || '').trim().toLowerCase(),
+        postal: (postal || '').trim().toLowerCase(),
+        country: (country || 'Bangladesh').trim().toLowerCase()
+    };
+    checkAddressChanges();
+}
+
+function checkAddressChanges() {
+    const saveCheck = document.getElementById('id_save_to_address_book');
+    const saveLabel = document.getElementById('save-address-label');
+    const saveHint = document.getElementById('save-address-hint');
+    if (!saveCheck) return;
+
+    if (currentSavedCount >= 3) {
+        saveCheck.disabled = true;
+        saveCheck.checked = false;
+        if (saveLabel) saveLabel.classList.add('text-muted');
+        if (saveHint) {
+            saveHint.classList.remove('d-none');
+            saveHint.innerHTML = '<i class="bi bi-info-circle me-1"></i> Address book limit reached (3/3 saved). Manage in your Profile.';
+        }
+        return;
+    }
+
+    const currentStreet = (document.getElementById('checkout-street-address')?.value || '').trim().toLowerCase();
+    const currentCity = (document.getElementById('checkout-city')?.value || '').trim().toLowerCase();
+    const currentPostal = (document.getElementById('checkout-postal-code')?.value || '').trim().toLowerCase();
+    const currentCountry = (document.getElementById('checkout-country')?.value || 'Bangladesh').trim().toLowerCase();
+
+    // Check if current inputs match the selected saved address
+    const matchesSaved = selectedSavedData.id && 
+        currentStreet === selectedSavedData.street &&
+        currentCity === selectedSavedData.city &&
+        currentPostal === selectedSavedData.postal &&
+        currentCountry === selectedSavedData.country;
+
+    if (matchesSaved) {
+        // Muted because address is already saved
+        saveCheck.disabled = true;
+        saveCheck.checked = false;
+        if (saveLabel) saveLabel.classList.add('text-muted');
+        if (saveHint) {
+            saveHint.classList.remove('d-none');
+            saveHint.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i> Selected address is already saved in your Address Book.';
+        }
+    } else {
+        // Unmuted because it's a new or edited address and user has < 3 addresses
+        saveCheck.disabled = false;
+        saveCheck.checked = true;
+        if (saveLabel) saveLabel.classList.remove('text-muted');
+        if (saveHint) {
+            saveHint.classList.add('d-none');
+            saveHint.innerHTML = '';
+        }
+    }
+}
+
+function selectSavedAddress(addressId, street, city, postalCode, country, cardElem) {
     document.querySelectorAll('.address-choice-card, .address-new-card').forEach(c => {
         c.classList.remove('selected');
     });
@@ -356,11 +514,20 @@ function selectSavedAddress(addressId, addressText, cardElem) {
         cardElem.classList.add('selected');
     }
 
-    document.getElementById('selected-address-id').value = addressId;
-    const addressInput = document.getElementById('checkout-address');
-    if (addressInput && addressText) {
-        addressInput.value = addressText;
-    }
+    const hiddenId = document.getElementById('selected-address-id');
+    if (hiddenId) hiddenId.value = addressId;
+
+    const streetInput = document.getElementById('checkout-street-address');
+    const cityInput = document.getElementById('checkout-city');
+    const postalInput = document.getElementById('checkout-postal-code');
+    const countryInput = document.getElementById('checkout-country');
+
+    if (streetInput) streetInput.value = street || '';
+    if (cityInput) cityInput.value = city || '';
+    if (postalInput) postalInput.value = postalCode || '';
+    if (countryInput) countryInput.value = country || 'Bangladesh';
+
+    updateSelectedData(addressId, street, city, postalCode, country);
 }
 
 function useNewAddress() {
@@ -371,36 +538,53 @@ function useNewAddress() {
     if (newCard) {
         newCard.classList.add('selected');
     }
-    document.getElementById('selected-address-id').value = '';
-    const addressInput = document.getElementById('checkout-address');
-    if (addressInput) {
-        addressInput.value = '';
-        addressInput.focus();
+    const hiddenId = document.getElementById('selected-address-id');
+    if (hiddenId) hiddenId.value = '';
+
+    const streetInput = document.getElementById('checkout-street-address');
+    const cityInput = document.getElementById('checkout-city');
+    const postalInput = document.getElementById('checkout-postal-code');
+    const countryInput = document.getElementById('checkout-country');
+
+    if (streetInput) {
+        streetInput.value = '';
+        streetInput.focus();
     }
+    if (cityInput) cityInput.value = '';
+    if (postalInput) postalInput.value = '';
+    if (countryInput) countryInput.value = 'Bangladesh';
+
+    updateSelectedData('', '', '', '', 'Bangladesh');
 }
 
-// Form submit loading state
+// Form submit loading state & initial address check
 document.addEventListener('DOMContentLoaded', function() {
     const checkoutForm = document.getElementById('checkout-form');
     const submitBtn = document.getElementById('checkout-submit-btn');
 
-    // Save to address book button state toggle
-    const saveCheck = document.getElementById('id_save_to_address_book');
-    if (saveCheck) {
-        const parentBtn = saveCheck.closest('.dj-save-address-btn');
-        if (parentBtn && saveCheck.checked) {
-            parentBtn.classList.add('checked');
+    // Attach real-time input listeners to all address fields
+    ['checkout-street-address', 'checkout-city', 'checkout-postal-code', 'checkout-country'].forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem) {
+            elem.addEventListener('input', checkAddressChanges);
         }
-        saveCheck.addEventListener('change', function() {
-            if (parentBtn) {
-                parentBtn.classList.toggle('checked', this.checked);
-            }
-        });
+    });
+
+    // Initialize initial state if a saved address card is selected
+    const initialSelectedCard = document.querySelector('.address-choice-card.selected');
+    if (initialSelectedCard) {
+        const streetVal = document.getElementById('checkout-street-address')?.value || '';
+        const cityVal = document.getElementById('checkout-city')?.value || '';
+        const postalVal = document.getElementById('checkout-postal-code')?.value || '';
+        const countryVal = document.getElementById('checkout-country')?.value || 'Bangladesh';
+        const hiddenId = document.getElementById('selected-address-id')?.value || 'initial';
+        updateSelectedData(hiddenId, streetVal, cityVal, postalVal, countryVal);
+    } else {
+        checkAddressChanges();
     }
 
     if (checkoutForm && submitBtn) {
         checkoutForm.addEventListener('submit', function() {
-            // Check form validity if supported
             if (checkoutForm.checkValidity && !checkoutForm.checkValidity()) {
                 return;
             }

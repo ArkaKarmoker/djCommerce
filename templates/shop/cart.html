@@ -23,14 +23,8 @@
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                 <h1 class="dj-cart-title mb-0">
                     Your Shopping Cart
-                    <span class="dj-cart-count-badge" id="cart-header-count">{{ cart|length }} {% if cart|length == 1 %}Item{% else %}Items{% endif %}</span>
                 </h1>
                 <div class="d-flex align-items-center gap-2">
-                    {% if cart|length > 0 %}
-                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold dj-delete-all-btn" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
-                        <i class="bi bi-trash3 me-1.5"></i> Delete All
-                    </button>
-                    {% endif %}
                     <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
                         <i class="bi bi-plus-lg me-1"></i> Add More Products
                     </a>
@@ -102,13 +96,13 @@
                                     <!-- Product Info -->
                                     <td>
                                         <div class="dj-cart-product-cell">
-                                            <div class="dj-cart-product-img-wrap">
+                                            <a href="{% url 'shop:product_detail' item.product.id %}" class="dj-cart-product-img-wrap d-inline-block text-decoration-none" title="{{ item.product.name }}">
                                                 {% if item.product.image %}
                                                     <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
                                                 {% else %}
                                                     <i class="bi bi-phone fs-2 text-muted"></i>
                                                 {% endif %}
-                                            </div>
+                                            </a>
                                             <div class="flex-grow-1">
                                                 <a href="{% url 'shop:product_detail' item.product.id %}" class="dj-cart-product-title">
                                                     {{ item.product.name }}
@@ -122,9 +116,6 @@
                                                             <i class="bi bi-gear-fill me-1"></i>{{ item.variant.name }}
                                                         </span>
                                                     {% endif %}
-                                                </div>
-                                                <div class="dj-cart-stock-status">
-                                                    <i class="bi bi-check-circle-fill"></i> In Stock &bull; Official Warranty
                                                 </div>
                                             </div>
                                         </div>
@@ -183,17 +174,12 @@
 
                     <!-- Footer Toolbar -->
                     <div class="dj-cart-card-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-semibold">
-                                <i class="bi bi-arrow-left me-1"></i> Continue Shopping
-                            </a>
-                            <button type="button" class="btn btn-outline-danger rounded-pill btn-sm px-3 fw-semibold dj-delete-all-btn" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
-                                <i class="bi bi-trash3 me-1.5"></i> Delete All
-                            </button>
-                        </div>
-                        <span class="small text-muted d-none d-sm-inline">
-                            <i class="bi bi-shield-lock text-success me-1"></i> Prices inclusive of official taxes
-                        </span>
+                        <a href="{% url 'shop:product_list' %}" class="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-semibold">
+                            <i class="bi bi-arrow-left me-1"></i> Continue Shopping
+                        </a>
+                        <button type="button" class="btn btn-outline-danger rounded-pill btn-sm px-3 fw-semibold dj-delete-all-btn" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                            <i class="bi bi-trash3 me-1.5"></i> Clear Cart
+                        </button>
                     </div>
                 </div>
             </div>
@@ -315,7 +301,7 @@
                 <div class="dj-modal-icon-danger mx-auto mb-3">
                     <i class="bi bi-trash3-fill"></i>
                 </div>
-                <h4 class="modal-title fw-bold text-dark mb-2" id="deleteAllModalLabel">Delete All Items?</h4>
+                <h4 class="modal-title fw-bold text-dark mb-2" id="deleteAllModalLabel">Clear Shopping Cart?</h4>
                 <p class="text-secondary small mb-4">
                     Are you sure you want to clear your shopping cart? All <strong id="cart-modal-count">{{ cart|length }}</strong> <span id="cart-modal-item-word">{% if cart|length == 1 %}item{% else %}items{% endif %}</span> will be removed. This cannot be undone.
                 </p>
@@ -326,7 +312,7 @@
                     <form action="{% url 'shop:cart_clear' %}" method="post" class="m-0 flex-grow-1">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger rounded-pill px-4 py-2 fw-semibold w-100 shadow-sm" id="btn-confirm-delete-all">
-                            <i class="bi bi-trash3 me-1"></i> Yes, Delete All
+                            <i class="bi bi-trash3 me-1"></i> Yes, Clear Cart
                         </button>
                     </form>
                 </div>

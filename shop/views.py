@@ -649,53 +649,55 @@ def checkout_view(request):
     if request.method == 'POST':
         form = CheckoutForm(request.POST)
         if form.is_valid():
-            name = form.cleaned_data['name'].strip()
-            phone = form.cleaned_data['phone'].strip()
-            address_text = form.cleaned_data['address'].strip()
-            email = form.cleaned_data.get('email') or request.user.email
+            street_address = form.cleaned_data['street_address'].strip()
+            city = form.cleaned_data['city'].strip()
+            postal_code = form.cleaned_data['postal_code'].strip()
+            country = form.cleaned_data['country'].strip()
             payment_method = form.cleaned_data.get('payment_method', 'cod')
             saved_address_id = form.cleaned_data.get('saved_address_id')
             save_to_address_book = form.cleaned_data.get('save_to_address_book', False)
+
+            # Recipient contact info from customer / user profile (non-editable in checkout)
+            name = customer.get_full_name() or request.user.get_full_name() or customer.name or request.user.username
+            phone = customer.phone or ''
+            email = request.user.email or customer.email or ''
+
+            formatted_address = f"{street_address}, {city} {postal_code}, {country}".strip()
 
             delivery_address_obj = None
             if saved_address_id:
                 delivery_address_obj = customer.addresses.filter(id=saved_address_id).first()
 
-            # If user wants to save to address book (or entered a new address not yet saved)
-            if save_to_address_book and address_text:
-                existing_addr = customer.addresses.filter(address_line__iexact=address_text).first()
+            # If user wants to save to address book (enforce maximum 3 address limit)
+            if save_to_address_book and street_address and customer.addresses.count() < 3:
+                existing_addr = customer.addresses.filter(
+                    address_line__iexact=street_address,
+                    city__iexact=city
+                ).first()
                 if existing_addr:
                     delivery_address_obj = existing_addr
                 elif not delivery_address_obj:
-                    # Parse city if comma-separated, else default to Dhaka
-                    city_part = "Dhaka"
-                    if "," in address_text:
-                        parts = [p.strip() for p in address_text.split(",") if p.strip()]
-                        if len(parts) >= 2:
-                            city_part = parts[-1]
                     new_addr = Address.objects.create(
-                        address_line=address_text,
-                        city=city_part,
-                        country="Bangladesh",
+                        address_line=street_address,
+                        city=city,
+                        postal_code=postal_code,
+                        country=country,
                         is_default=not customer.addresses.exists()
                     )
                     customer.addresses.add(new_addr)
                     delivery_address_obj = new_addr
+            elif not delivery_address_obj and street_address:
+                delivery_address_obj = Address.objects.create(
+                    address_line=street_address,
+                    city=city,
+                    postal_code=postal_code,
+                    country=country,
+                    is_default=False
+                )
 
-            # Update customer profile details
-            customer.name = name
-            customer.phone = phone
-            customer.address = address_text
-            if email:
-                customer.email = email
+            # Update customer default address text
+            customer.address = formatted_address
             customer.save()
-
-            # Also update User model's name & email
-            if email and email != request.user.email:
-                request.user.email = email
-            if name:
-                request.user.first_name = name
-            request.user.save()
 
             order_number = f"DJ-{uuid.uuid4().hex[:8].upper()}"
 
@@ -775,22 +777,32 @@ def checkout_view(request):
                 messages.success(request, "Order Placed Successfully!")
                 return redirect('shop:order_success', order_number=order_number)
     else:
-        # Determine default address text and ID
+        # Determine default address details and ID
         default_addr = saved_addresses.filter(is_default=True).first() or saved_addresses.first()
-        initial_addr_text = ''
         selected_address_id = ''
+        initial_street = ''
+        initial_city = ''
+        initial_postal = ''
+        initial_country = 'Bangladesh'
+
         if default_addr:
             selected_address_id = str(default_addr.id)
-            parts = [p for p in [default_addr.address_line, default_addr.city, default_addr.country] if p]
-            initial_addr_text = ", ".join(parts)
+            initial_street = default_addr.address_line
+            initial_city = default_addr.city
+            initial_postal = default_addr.postal_code
+            initial_country = default_addr.country or 'Bangladesh'
         elif customer.address:
-            initial_addr_text = customer.address
+            initial_street = customer.address
 
         initial_data = {
-            'name': customer.name or request.user.get_full_name() or request.user.username,
+            'first_name': customer.first_name or request.user.first_name or '',
+            'last_name': customer.last_name or request.user.last_name or '',
             'phone': customer.phone or '',
-            'address': initial_addr_text,
             'email': request.user.email or customer.email or '',
+            'street_address': initial_street,
+            'city': initial_city,
+            'postal_code': initial_postal,
+            'country': initial_country,
             'saved_address_id': selected_address_id,
             'save_to_address_book': True,
         }
@@ -854,63 +866,53 @@ def order_success_view(request, order_number):
     """
     Order success confirmation page showing "Order Placed Successfully!"
     """
-    orders = Order.objects.filter(order_number=order_number)
+    orders = Order.objects.filter(order_number=order_number).select_related('product', 'variant')
     if not orders.exists():
         messages.error(request, "Order not found.")
         return redirect('shop:home')
 
     first_order = orders.first()
     customer = first_order.customer
-    total_amount = sum(order.total_price for order in orders)
+    subtotal = sum(order.total_price for order in orders)
+    delivery_charge = 100
+    vat_amount = 0
+    grand_total = subtotal + delivery_charge
+
+    # Customer payment breakdown
+    if first_order.status in ['Paid', 'Delivered']:
+        amount_paid = grand_total
+        amount_due = 0
+    else:
+        amount_paid = 0
+        amount_due = grand_total
 
     context = {
         'order_number': order_number,
         'orders': orders,
         'customer': customer,
-        'total_amount': total_amount,
+        'first_order': first_order,
+        'subtotal': subtotal,
+        'delivery_charge': delivery_charge,
+        'vat_amount': vat_amount,
+        'grand_total': grand_total,
+        'total_amount': grand_total,
+        'amount_paid': amount_paid,
+        'amount_due': amount_due,
         'order_date': first_order.order_date,
         'status': first_order.status,
         'payment_method': first_order.payment_method,
+        'delivery_address': first_order.delivery_address,
     }
     return render(request, 'shop/order_success.html', context)
 
 
 def order_lookup_view(request):
     """
-    Track orders by order reference number (e.g. DJ-B4627791).
+    Track order page has been replaced by User Dashboard orders view.
     """
-    order_number = request.GET.get('order_number', '').strip()
-    phone = request.GET.get('phone', '').strip()
-    orders = None
-    customer = None
-    first_order = None
-    total_amount = 0
-    searched = bool(order_number or phone)
-
-    if order_number:
-        orders = Order.objects.filter(order_number__iexact=order_number).order_by('-order_date')
-        if orders.exists():
-            first_order = orders.first()
-            customer = first_order.customer
-            total_amount = sum(o.total_price for o in orders)
-    elif phone:
-        customer = Customer.objects.filter(phone=phone).first()
-        if customer:
-            orders = Order.objects.filter(customer=customer).order_by('-order_date')
-            if orders.exists():
-                first_order = orders.first()
-                total_amount = sum(o.total_price for o in orders)
-
-    context = {
-        'order_number': order_number,
-        'phone': phone,
-        'customer': customer,
-        'orders': orders,
-        'first_order': first_order,
-        'total_amount': total_amount,
-        'searched': searched,
-    }
-    return render(request, 'shop/order_lookup.html', context)
+    if request.user.is_authenticated:
+        return redirect('shop:dashboard')
+    return redirect('shop:home')
 
 
 # ==========================================
@@ -1009,11 +1011,36 @@ def dashboard_view(request):
         }
     )
 
-    orders = Order.objects.filter(customer=customer).select_related('product', 'variant').order_by('-order_date')
+    all_order_items = Order.objects.filter(customer=customer).select_related('product', 'variant').order_by('-order_date')
     saved_addresses = customer.addresses.all().order_by('-is_default', '-id')
-    total_orders = orders.count()
-    completed_orders_count = orders.filter(status__in=['Delivered', 'Paid', 'Completed']).count()
-    total_spent = sum(o.total_price for o in orders.filter(status__in=['Paid', 'Delivered', 'Processing']))
+
+    # Aggregate multiple items in the same order into a single row per order_number
+    seen_order_numbers = []
+    grouped_orders = []
+    for item in all_order_items:
+        if item.order_number not in seen_order_numbers:
+            seen_order_numbers.append(item.order_number)
+            # Collect all items for this order number
+            order_items = [i for i in all_order_items if i.order_number == item.order_number]
+            total_for_order = sum(i.total_price for i in order_items)
+            total_qty = sum(i.quantity for i in order_items)
+            item_count = len(order_items)
+            grouped_orders.append({
+                'order_number': item.order_number,
+                'order_date': item.order_date,
+                'product': item.product,
+                'variant': item.variant,
+                'quantity': total_qty,
+                'total_price': total_for_order,
+                'status': item.status,
+                'item_count': item_count,
+                'items': order_items,
+            })
+
+    orders = grouped_orders
+    total_orders = len(grouped_orders)
+    completed_orders_count = sum(1 for o in grouped_orders if o['status'] in ['Delivered', 'Paid', 'Completed'])
+    total_spent = sum(o['total_price'] for o in grouped_orders if o['status'] in ['Paid', 'Delivered', 'Processing'])
     profile_form = CustomerProfileForm(instance=customer)
     address_form = AddressForm()
 
@@ -1107,9 +1134,13 @@ def password_change_view(request):
 @login_required
 def address_create_view(request):
     """
-    Add a new address to customer's address book.
+    Add a new address to customer's address book (max 3 allowed).
     """
     customer = get_object_or_404(Customer, user=request.user)
+    if customer.addresses.count() >= 3:
+        messages.error(request, "You cannot save more than 3 addresses in your Address Book. Please edit or delete an existing address.")
+        return redirect('/dashboard/#addresses')
+
     if request.method == 'POST':
         form = AddressForm(request.POST)
         if form.is_valid():
@@ -1142,12 +1173,38 @@ def address_edit_view(request, address_id):
 def address_delete_view(request, address_id):
     """
     Remove an address from customer's address book.
+    Supports both POST (from modal) and GET requests.
     """
     customer = get_object_or_404(Customer, user=request.user)
-    address = get_object_or_404(Address, id=address_id)
-    customer.addresses.remove(address)
-    address.delete()
-    messages.info(request, "Address removed successfully.")
+    try:
+        address = customer.addresses.get(id=address_id)
+    except Address.DoesNotExist:
+        address = Address.objects.filter(id=address_id).first()
+
+    if address:
+        was_default = address.is_default
+        customer.addresses.remove(address)
+        
+        # If not referenced by other customers and not used in previous orders, delete row
+        if not address.customers.exists() and not address.orders.exists():
+            address.delete()
+
+        # If deleted address was default, set the next saved address as default
+        if was_default:
+            first_addr = customer.addresses.first()
+            if first_addr:
+                first_addr.is_default = True
+                first_addr.save()
+
+        # If no addresses remain, clear legacy customer.address
+        if customer.addresses.count() == 0:
+            customer.address = ''
+            customer.save()
+
+        messages.success(request, "Delivery address deleted successfully.")
+    else:
+        messages.error(request, "Address not found in your address book.")
+
     return redirect('/dashboard/#addresses')
 
 
@@ -1177,18 +1234,88 @@ def order_detail_view(request, order_number):
         return redirect('shop:dashboard')
 
     first_order = orders.first()
-    total_amount = sum(o.total_price for o in orders)
+    subtotal = sum(o.total_price for o in orders)
+    delivery_charge = 100
+    vat_amount = 0
+    grand_total = subtotal + delivery_charge
+
+    # Customer payment breakdown
+    if first_order.status in ['Paid', 'Delivered']:
+        amount_paid = grand_total
+        amount_due = 0
+    else:
+        amount_paid = 0
+        amount_due = grand_total
 
     context = {
         'order_number': order_number,
         'orders': orders,
+        'first_order': first_order,
         'customer': customer,
-        'total_amount': total_amount,
+        'subtotal': subtotal,
+        'delivery_charge': delivery_charge,
+        'vat_amount': vat_amount,
+        'grand_total': grand_total,
+        'total_amount': grand_total,
+        'amount_paid': amount_paid,
+        'amount_due': amount_due,
         'order_date': first_order.order_date,
         'status': first_order.status,
         'payment_method': first_order.payment_method,
+        'delivery_address': first_order.delivery_address,
     }
     return render(request, 'shop/order_detail.html', context)
+
+
+def order_invoice_view(request, order_number):
+    """
+    Render a clean, print-ready invoice page for a given order number.
+    Auto-triggers browser print dialog on load. Accessible from dashboard & order success.
+    """
+    if request.user.is_authenticated:
+        try:
+            customer = Customer.objects.get(user=request.user)
+            orders = Order.objects.filter(order_number=order_number, customer=customer)
+        except Customer.DoesNotExist:
+            orders = Order.objects.filter(order_number=order_number)
+    else:
+        orders = Order.objects.filter(order_number=order_number)
+
+    if not orders.exists():
+        messages.error(request, "Order not found.")
+        return redirect('shop:home')
+
+    first_order = orders.first()
+    customer = first_order.customer
+    subtotal = sum(o.total_price for o in orders)
+    delivery_charge = 100
+    vat_amount = 0
+    grand_total = subtotal + delivery_charge
+
+    if first_order.status in ['Paid', 'Delivered']:
+        amount_paid = grand_total
+        amount_due = 0
+    else:
+        amount_paid = 0
+        amount_due = grand_total
+
+    context = {
+        'order_number': order_number,
+        'orders': orders,
+        'first_order': first_order,
+        'customer': customer,
+        'subtotal': subtotal,
+        'delivery_charge': delivery_charge,
+        'vat_amount': vat_amount,
+        'grand_total': grand_total,
+        'amount_paid': amount_paid,
+        'amount_due': amount_due,
+        'order_date': first_order.order_date,
+        'status': first_order.status,
+        'payment_method': first_order.payment_method,
+        'delivery_address': first_order.delivery_address,
+    }
+    return render(request, 'shop/order_invoice.html', context)
 
 
 def contact_submit_view(request):
@@ -1196,6 +1323,7 @@ def contact_submit_view(request):
     Handle contact form submissions from footer with dual AJAX / standard POST support.
     """
     if request.method == 'POST':
+
         name = request.POST.get('name', '').strip()
         email = request.POST.get('email', '').strip()
         phone = request.POST.get('phone', '').strip()

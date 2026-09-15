@@ -42,4 +42,5 @@ urlpatterns = [
     path('dashboard/address/delete/<int:address_id>/', views.address_delete_view, name='address_delete'),
     path('dashboard/address/default/<int:address_id>/', views.address_set_default_view, name='address_set_default'),
     path('dashboard/orders/<str:order_number>/', views.order_detail_view, name='order_detail'),
+    path('dashboard/orders/<str:order_number>/invoice/', views.order_invoice_view, name='order_invoice'),
 ]

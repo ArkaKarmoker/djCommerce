@@ -106,9 +106,9 @@ The repository includes a pre-populated `db.sqlite3` and all product images. Clo
 
 | Role | Username / Email | Password | Access |
 | :--- | :--- | :--- | :--- |
-| Superuser | `admin` / `admin@example.com` | `admin123` | Django Admin Panel |
-| Customer 1 | `testbuyer` / `testbuyer@example.com` | `Password123` | Orders, address book, profile |
-| Customer 2 | `abcd` / `wxyzabcd850@gmail.com` | `123456` | Existing orders |
+| **Admin / Superuser** | `admin` / `admin@example.com` | `123456` | Full access to Django Admin Panel (`/admin/`) & Storefront |
+| **Customer (Normal User)** | `customer` / `customer@example.com` | `123456` | Storefront shopping, cart, checkout & customer dashboard |
+| **Customer (Normal User)** | `testuser` / `testuser@example.com` | `123456` | Storefront shopping, cart, checkout & customer dashboard |
 
 ---
 

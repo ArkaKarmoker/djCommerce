@@ -56,10 +56,10 @@ cover/
 *.pot
 
 # Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+# Database and Media (commented out so repo can be cloned and run immediately with full pre-populated catalog)
+# db.sqlite3
+# db.sqlite3-journal
+# media/ (included so all 75 realistic product images and galleries are preserved)
 
 # Flask stuff:
 instance/

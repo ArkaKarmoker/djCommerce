@@ -1,9 +1,5 @@
-django
-pillow
-asgiref
-sqlparse
-tzdata
-stripe
-python-dotenv
-requests
-typing_extensions
+Django==6.1.1
+Pillow==12.3.0
+stripe==15.6.1
+python-dotenv==1.2.3
+requests==2.34.2

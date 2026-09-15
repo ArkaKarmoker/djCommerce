@@ -1022,6 +1022,23 @@
                 return res.json();
             })
             .then(data => {
+                if (data.success === false || data.out_of_stock) {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHtml;
+                    }
+                    if (window.showToast) {
+                        window.showToast(
+                            data.message || 'Product is not available. Contact us for pre order.',
+                            'warning',
+                            'Out of Stock',
+                            data.contact_url || '/#contact',
+                            'Contact Us'
+                        );
+                    }
+                    return;
+                }
+
                 if (submitBtn) {
                     // Success checkmark state
                     if (submitBtn.classList.contains('dj-icon-btn-cart')) {

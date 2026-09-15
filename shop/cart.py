@@ -22,9 +22,12 @@ class Cart:
         """
         item_key = f"{product.id}_{variant.id}" if variant else str(product.id)
         
-        price = product.price
-        if variant and variant.price_adjustment:
-            price = price + variant.price_adjustment
+        if variant:
+            price = variant.price
+            max_stock = variant.quantity
+        else:
+            price = product.price
+            max_stock = product.quantity
 
         if item_key not in self.cart:
             self.cart[item_key] = {
@@ -34,8 +37,6 @@ class Cart:
                 'quantity': 0,
                 'price': str(price)
             }
-
-        max_stock = variant.stock if variant else product.quantity
 
         if override_quantity:
             self.cart[item_key]['quantity'] = quantity

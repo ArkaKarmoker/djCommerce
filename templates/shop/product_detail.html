@@ -73,69 +73,67 @@
 
                     <!-- Price & Stock Strip -->
                     <div class="dj-pdp-price-strip">
-                        <span class="dj-pdp-cash-price">&#2547; {{ product.price|floatformat:"0" }}</span>
-                        {% if product.regular_price and product.regular_price > product.price %}
+                        <span class="dj-pdp-cash-price" id="pdp-display-price">&#2547; {{ product.price|floatformat:"0" }}</span>
+                        <span id="pdp-regular-price-container" {% if not product.regular_price or product.regular_price <= product.price %}style="display: none;"{% endif %}>
                             <span class="dj-pdp-divider">|</span>
-                            <span class="dj-pdp-regular-price">&#2547; {{ product.regular_price|floatformat:"0" }}</span>
-                        {% endif %}
+                            <span class="dj-pdp-regular-price" id="pdp-display-regular-price">&#2547; {{ product.regular_price|floatformat:"0" }}</span>
+                        </span>
                         <span class="dj-pdp-divider">|</span>
-                        <span>Availability: <span class="dj-pdp-instock">{% if product.in_stock %}In Stock{% else %}<span class="text-danger">Out of Stock</span>{% endif %}</span></span>
+                        <span>Availability: <span class="dj-pdp-instock" id="pdp-display-stock">{% if product.in_stock %}In Stock{% else %}<span class="text-danger">Out of Stock</span>{% endif %}</span></span>
                     </div>
 
                     <!-- Purchase / Selection Form -->
                     <form action="{% url 'shop:cart_add' product.pk %}" method="post" id="pdp-purchase-form">
                         {% csrf_token %}
 
-
-                        <!-- Variant Selector (static combinations) -->
-                        <input type="hidden" name="variant" id="selected-variant-input" value="Phantom Black | 128GB | E-Sim JP">
+                        <!-- Variant Selector (dynamic from product variants) -->
+                        <input type="hidden" name="variant_id" id="selected-variant-id-input" value="{{ default_variant.id|default:'' }}">
+                        <input type="hidden" name="variant" id="selected-variant-input" value="{{ default_variant.name|default:'' }}">
+                        {% if variants %}
                         <div class="dj-selector-box">
                             <label class="dj-selector-label">Variant:</label>
                             <div class="dj-pills-row flex-wrap gap-2" id="variant-pills-container">
-                                <!-- First 6 always visible -->
-                                <div class="dj-option-pill selected" onclick="selectVariant(this, 'Phantom Black | 128GB | E-Sim JP')"><span>Phantom Black | 128GB | E-Sim JP</span></div>
-                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 128GB | E-Sim USA')"><span>Phantom Black | 128GB | E-Sim USA</span></div>
-                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 128GB | SIM+eSim AUS')"><span>Phantom Black | 128GB | SIM+eSim AUS</span></div>
-                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 128GB | Physical Dual SIM')"><span>Phantom Black | 128GB | Physical Dual SIM</span></div>
-                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 256GB | E-Sim JP')"><span>Phantom Black | 256GB | E-Sim JP</span></div>
-                                <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 256GB | E-Sim USA')"><span>Phantom Black | 256GB | E-Sim USA</span></div>
+                                {% for v in variants %}
+                                    {% if forloop.counter <= 6 %}
+                                        <div class="dj-option-pill {% if v.id == default_variant.id or forloop.first and not default_variant %}selected{% endif %}"
+                                             data-id="{{ v.id }}"
+                                             data-name="{{ v.name }}"
+                                             data-price="{{ v.price|floatformat:'0' }}"
+                                             data-regular-price="{% if v.regular_price %}{{ v.regular_price|floatformat:'0' }}{% endif %}"
+                                             data-quantity="{{ v.quantity }}"
+                                             data-in-stock="{% if v.in_stock %}1{% else %}0{% endif %}"
+                                             onclick="selectVariant(this, '{{ v.id }}', '{{ v.name|escapejs }}', '{{ v.price|floatformat:'0' }}', '{% if v.regular_price %}{{ v.regular_price|floatformat:'0' }}{% endif %}', {{ v.quantity }}, {% if v.in_stock %}true{% else %}false{% endif %})">
+                                            <span>{{ v.name }}</span>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
 
-                                <!-- Hidden variants (7–32), shown on "more" click -->
+                                {% if variants|length > 6 %}
                                 <div id="variant-extra" style="display:contents;">
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 256GB | SIM+eSim AUS')"><span>Phantom Black | 256GB | SIM+eSim AUS</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 256GB | Physical Dual SIM')"><span>Phantom Black | 256GB | Physical Dual SIM</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 512GB | E-Sim JP')"><span>Phantom Black | 512GB | E-Sim JP</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 512GB | E-Sim USA')"><span>Phantom Black | 512GB | E-Sim USA</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 512GB | SIM+eSim AUS')"><span>Phantom Black | 512GB | SIM+eSim AUS</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 512GB | Physical Dual SIM')"><span>Phantom Black | 512GB | Physical Dual SIM</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 1TB | E-Sim JP')"><span>Phantom Black | 1TB | E-Sim JP</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 1TB | E-Sim USA')"><span>Phantom Black | 1TB | E-Sim USA</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 1TB | SIM+eSim AUS')"><span>Phantom Black | 1TB | SIM+eSim AUS</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Phantom Black | 1TB | Physical Dual SIM')"><span>Phantom Black | 1TB | Physical Dual SIM</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 128GB | E-Sim JP')"><span>Titanium Gray | 128GB | E-Sim JP</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 128GB | E-Sim USA')"><span>Titanium Gray | 128GB | E-Sim USA</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 128GB | SIM+eSim AUS')"><span>Titanium Gray | 128GB | SIM+eSim AUS</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 128GB | Physical Dual SIM')"><span>Titanium Gray | 128GB | Physical Dual SIM</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 256GB | E-Sim JP')"><span>Titanium Gray | 256GB | E-Sim JP</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 256GB | E-Sim USA')"><span>Titanium Gray | 256GB | E-Sim USA</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 256GB | SIM+eSim AUS')"><span>Titanium Gray | 256GB | SIM+eSim AUS</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 256GB | Physical Dual SIM')"><span>Titanium Gray | 256GB | Physical Dual SIM</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 512GB | E-Sim JP')"><span>Titanium Gray | 512GB | E-Sim JP</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 512GB | E-Sim USA')"><span>Titanium Gray | 512GB | E-Sim USA</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 512GB | SIM+eSim AUS')"><span>Titanium Gray | 512GB | SIM+eSim AUS</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 512GB | Physical Dual SIM')"><span>Titanium Gray | 512GB | Physical Dual SIM</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 1TB | E-Sim JP')"><span>Titanium Gray | 1TB | E-Sim JP</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 1TB | E-Sim USA')"><span>Titanium Gray | 1TB | E-Sim USA</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 1TB | SIM+eSim AUS')"><span>Titanium Gray | 1TB | SIM+eSim AUS</span></div>
-                                    <div class="dj-option-pill" onclick="selectVariant(this, 'Titanium Gray | 1TB | Physical Dual SIM')"><span>Titanium Gray | 1TB | Physical Dual SIM</span></div>
+                                    {% for v in variants %}
+                                        {% if forloop.counter > 6 %}
+                                            <div class="dj-option-pill {% if v.id == default_variant.id %}selected{% endif %}"
+                                                 data-id="{{ v.id }}"
+                                                 data-name="{{ v.name }}"
+                                                 data-price="{{ v.price|floatformat:'0' }}"
+                                                 data-regular-price="{% if v.regular_price %}{{ v.regular_price|floatformat:'0' }}{% endif %}"
+                                                 data-quantity="{{ v.quantity }}"
+                                                 data-in-stock="{% if v.in_stock %}1{% else %}0{% endif %}"
+                                                 onclick="selectVariant(this, '{{ v.id }}', '{{ v.name|escapejs }}', '{{ v.price|floatformat:'0' }}', '{% if v.regular_price %}{{ v.regular_price|floatformat:'0' }}{% endif %}', {{ v.quantity }}, {% if v.in_stock %}true{% else %}false{% endif %})">
+                                                <span>{{ v.name }}</span>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
                                 </div>
 
                                 <!-- More / Less toggle -->
                                 <button type="button" id="variant-more-btn" onclick="toggleVariants()" class="dj-option-pill border-0 bg-transparent" style="color: var(--primary); font-weight: 600; cursor: pointer;">
-                                    <span>+ 26 more</span>
+                                    <span>+ {{ variants|length|add:"-6" }} more</span>
                                 </button>
+                                {% endif %}
                             </div>
                         </div>
+                        {% endif %}
 
                         <!-- Bullets List -->
                         <ul class="dj-pdp-bullets">
@@ -198,6 +196,12 @@
             <!-- 1. Specification Standalone Card -->
             <div class="card dj-pdp-panel-card p-4 mb-4">
                 <h5 class="fw-bold mb-3 pb-2 border-bottom text-dark">Specification</h5>
+                {% if product.description %}
+                    <div class="dj-product-description-content text-secondary lh-lg mb-3">
+                        {{ product.description|safe }}
+                    </div>
+                {% endif %}
+                {% if specs_list %}
                 <table class="dj-specs-table">
                     <tbody>
                         {% for key, val in specs_list %}
@@ -208,6 +212,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                {% endif %}
             </div>
 
             <!-- 2. Reviews Standalone Card -->
@@ -262,12 +267,99 @@
                             <form action="{% url 'shop:add_review' product.pk %}" method="post">
                                 {% csrf_token %}
                                 <div class="mb-2">
-                                    <label class="small fw-semibold">Rating</label>
-                                    <select name="rating" class="form-select form-select-sm">
-                                        <option value="5">5 Stars - Outstanding</option>
-                                        <option value="4">4 Stars - Very Good</option>
-                                        <option value="3">3 Stars - Good</option>
-                                    </select>
+                                    <label class="small fw-semibold mb-1">Rating</label>
+                                    <input type="hidden" name="rating" id="selected-rating-val" value="5">
+                                    <div class="dropdown">
+                                        <button class="form-select form-select-sm text-start d-flex align-items-center justify-content-between" type="button" id="ratingDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; background-color: #fff;">
+                                            <span id="rating-selected-text" class="d-flex align-items-center">
+                                                <span style="color: #f59e0b; margin-right: 6px; letter-spacing: 1px;">
+                                                    <i class="bi bi-star-fill"></i>
+                                                    <i class="bi bi-star-fill"></i>
+                                                    <i class="bi bi-star-fill"></i>
+                                                    <i class="bi bi-star-fill"></i>
+                                                    <i class="bi bi-star-fill"></i>
+                                                </span>
+                                                <span>5 Stars — Outstanding</span>
+                                            </span>
+                                        </button>
+                                        <ul class="dropdown-menu w-100 shadow-sm py-1" aria-labelledby="ratingDropdownBtn" style="font-size: 0.85rem;">
+                                            <li>
+                                                <a class="dropdown-item py-1.5 d-flex align-items-center" href="javascript:void(0);" onclick="setReviewRating(5, '5 Stars — Outstanding', 5)">
+                                                    <span style="color: #f59e0b; margin-right: 8px; letter-spacing: 1px;">
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                    </span>
+                                                    <span>5 Stars — Outstanding</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-1.5 d-flex align-items-center" href="javascript:void(0);" onclick="setReviewRating(4, '4 Stars — Very Good', 4)">
+                                                    <span style="color: #f59e0b; margin-right: 8px; letter-spacing: 1px;">
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                    </span>
+                                                    <span>4 Stars — Very Good</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-1.5 d-flex align-items-center" href="javascript:void(0);" onclick="setReviewRating(3, '3 Stars — Good', 3)">
+                                                    <span style="color: #f59e0b; margin-right: 8px; letter-spacing: 1px;">
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                    </span>
+                                                    <span>3 Stars — Good</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-1.5 d-flex align-items-center" href="javascript:void(0);" onclick="setReviewRating(2, '2 Stars — Poor', 2)">
+                                                    <span style="color: #f59e0b; margin-right: 8px; letter-spacing: 1px;">
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                    </span>
+                                                    <span>2 Stars — Poor</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-1.5 d-flex align-items-center" href="javascript:void(0);" onclick="setReviewRating(1, '1 Star — Terrible', 1)">
+                                                    <span style="color: #f59e0b; margin-right: 8px; letter-spacing: 1px;">
+                                                        <i class="bi bi-star-fill"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                        <i class="bi bi-star" style="color: #cbd5e1;"></i>
+                                                    </span>
+                                                    <span>1 Star — Terrible</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <script>
+                                    function setReviewRating(stars, label, filledCount) {
+                                        document.getElementById('selected-rating-val').value = stars;
+                                        var starsHtml = '';
+                                        for (var i = 1; i <= 5; i++) {
+                                            if (i <= filledCount) {
+                                                starsHtml += '<i class="bi bi-star-fill"></i> ';
+                                            } else {
+                                                starsHtml += '<i class="bi bi-star" style="color: #cbd5e1;"></i> ';
+                                            }
+                                        }
+                                        document.getElementById('rating-selected-text').innerHTML = 
+                                            '<span style="color: #f59e0b; margin-right: 6px; letter-spacing: 1px;">' + starsHtml + '</span><span>' + label + '</span>';
+                                    }
+                                    </script>
                                 </div>
                                 <div class="mb-3">
                                     <label class="small fw-semibold">Your Review</label>
@@ -390,26 +482,66 @@ function changeMainImage(src, el) {
     el.style.borderColor = 'var(--primary)';
 }
 
-function selectVariant(el, value) {
+function selectVariant(el, id, name, price, regularPrice, quantity, inStock) {
     document.querySelectorAll('.dj-option-pill').forEach(p => p.classList.remove('selected'));
     el.classList.add('selected');
-    document.getElementById('selected-variant-input').value = value;
+
+    // Update hidden inputs
+    const idInput = document.getElementById('selected-variant-id-input');
+    if (idInput) idInput.value = id;
+    const nameInput = document.getElementById('selected-variant-input');
+    if (nameInput) nameInput.value = name;
+
+    // Update Cash Price
+    const priceEl = document.getElementById('pdp-display-price');
+    if (priceEl && price) {
+        priceEl.innerHTML = '&#2547; ' + Number(price).toLocaleString('en-US');
+    }
+
+    // Update Regular Price
+    const regContainer = document.getElementById('pdp-regular-price-container');
+    const regPriceEl = document.getElementById('pdp-display-regular-price');
+    if (regContainer && regPriceEl) {
+        if (regularPrice && Number(regularPrice) > Number(price)) {
+            regPriceEl.innerHTML = '&#2547; ' + Number(regularPrice).toLocaleString('en-US');
+            regContainer.style.display = '';
+        } else {
+            regContainer.style.display = 'none';
+        }
+    }
+
+    // Update Stock status
+    const stockEl = document.getElementById('pdp-display-stock');
+    if (stockEl) {
+        if (inStock && Number(quantity) > 0) {
+            stockEl.innerHTML = 'In Stock';
+            stockEl.className = 'dj-pdp-instock';
+        } else {
+            stockEl.innerHTML = '<span class="text-danger">Out of Stock</span>';
+            stockEl.className = 'dj-pdp-instock text-danger';
+        }
+    }
 }
 
 function toggleVariants() {
     const extra = document.getElementById('variant-extra');
     const btn = document.getElementById('variant-more-btn');
+    if (!extra || !btn) return;
     const isHidden = extra.dataset.hidden === '1';
     extra.querySelectorAll('.dj-option-pill').forEach(p => p.style.display = isHidden ? '' : 'none');
     extra.dataset.hidden = isHidden ? '0' : '1';
-    btn.querySelector('span').textContent = isHidden ? '− Show less' : '+ 26 more';
+    const totalCount = document.querySelectorAll('#variant-pills-container .dj-option-pill').length;
+    const extraCount = totalCount - 6;
+    btn.querySelector('span').textContent = isHidden ? '− Show less' : `+ ${extraCount} more`;
 }
 
 // Hide extra variants on load
 document.addEventListener('DOMContentLoaded', function () {
     const extra = document.getElementById('variant-extra');
-    extra.querySelectorAll('.dj-option-pill').forEach(p => p.style.display = 'none');
-    extra.dataset.hidden = '1';
+    if (extra) {
+        extra.querySelectorAll('.dj-option-pill').forEach(p => p.style.display = 'none');
+        extra.dataset.hidden = '1';
+    }
 });
 
 function stepQty(delta) {
@@ -422,6 +554,16 @@ function stepQty(delta) {
 }
 
 function submitShopNow() {
+    const stockEl = document.getElementById('pdp-display-stock');
+    if (stockEl && stockEl.textContent.toLowerCase().includes('out of stock')) {
+        const msg = 'Product is not available. Contact us for pre order.';
+        if (window.showToast) {
+            window.showToast(msg, 'warning', 'Out of Stock', '/#contact', 'Contact Us');
+        } else {
+            alert(msg);
+        }
+        return;
+    }
     const form = document.getElementById('pdp-purchase-form');
     const input = document.createElement('input');
     input.type = 'hidden';

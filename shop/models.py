@@ -69,6 +69,35 @@ class Category(TimeStampMixin):
         return self.parent is None
 
 
+class SubCategory(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "Subcategory"
+        verbose_name_plural = "Subcategories"
+
+
+class Brand(TimeStampMixin):
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name) or "brand"
+            slug = base_slug
+            counter = 1
+            while Brand.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class Product(TimeStampMixin):
     category = models.ForeignKey(
         Category,
@@ -80,12 +109,9 @@ class Product(TimeStampMixin):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     brand = models.CharField(max_length=100, blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    regular_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     short_description = models.CharField(max_length=300, blank=True)
-    description = models.TextField()
+    description = models.TextField(verbose_name="Specification")
     image = models.ImageField(upload_to='products/', blank=True, null=True)
-    quantity = models.PositiveIntegerField(default=10)
     rating = models.DecimalField(max_digits=3, decimal_places=1, default=4.8)
     is_featured = models.BooleanField(default=False)
 
@@ -101,8 +127,50 @@ class Product(TimeStampMixin):
         return self.name
 
     @property
+    def default_variant(self):
+        """
+        Returns the default active variant for this product,
+        or the first available variant, or the first variant.
+        """
+        if hasattr(self, '_prefetched_objects_cache') and 'variants' in self._prefetched_objects_cache:
+            variants = self._prefetched_objects_cache['variants']
+            for v in variants:
+                if v.is_default and v.is_available:
+                    return v
+            for v in variants:
+                if v.is_default:
+                    return v
+            for v in variants:
+                if v.is_available:
+                    return v
+            return variants[0] if variants else None
+
+        return (
+            self.variants.filter(is_default=True, is_available=True).first()
+            or self.variants.filter(is_default=True).first()
+            or self.variants.filter(is_available=True).first()
+            or self.variants.first()
+        )
+
+    @property
+    def price(self):
+        dv = self.default_variant
+        return dv.price if dv else 0
+
+    @property
+    def regular_price(self):
+        dv = self.default_variant
+        return dv.regular_price if dv else None
+
+    @property
+    def quantity(self):
+        dv = self.default_variant
+        return dv.quantity if dv else 0
+
+    @property
     def in_stock(self):
-        return self.quantity > 0
+        dv = self.default_variant
+        return (dv.quantity > 0 and dv.is_available) if dv else False
 
     @property
     def discount_amount(self):
@@ -144,19 +212,56 @@ class Product(TimeStampMixin):
 
 class ProductVariant(TimeStampMixin):
     """
-    Product variant representing specific phone color, storage, and stock.
+    Product variant representing specific combination (color, storage, region).
+    Stores distinct selling price, regular price, stock quantity, availability, and default status.
     """
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
-    name = models.CharField(max_length=255)
-    color = models.CharField(max_length=255)
-    stock = models.PositiveIntegerField(default=5)
-    price_adjustment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    name = models.CharField(max_length=255, verbose_name="Variant Name")
+    slug = models.SlugField(max_length=255, blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Discounted / Selling Price")
+    regular_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Original / Regular Price without discount")
+    quantity = models.PositiveIntegerField(default=10, help_text="Stock Quantity")
+    is_available = models.BooleanField(default=True, verbose_name="Is Available")
+    is_default = models.BooleanField(default=False, verbose_name="Is Default Variation")
 
     class Meta:
-        ordering = ['name']
+        ordering = ['-is_default', 'name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(f"{self.product.slug}-{self.name}") if self.product_id else slugify(self.name)
+            slug = base_slug or "variant"
+            counter = 1
+            while ProductVariant.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+
+        super().save(*args, **kwargs)
+
+        # If marked as default, ensure all other variants of this product are not default
+        if self.is_default and self.product_id:
+            ProductVariant.objects.filter(product_id=self.product_id).exclude(pk=self.pk).update(is_default=False)
 
     def __str__(self):
-        return f"{self.product.name} - {self.name} ({self.color})"
+        return f"{self.product.name} - {self.name}"
+
+    @property
+    def in_stock(self):
+        return self.quantity > 0 and self.is_available
+
+    @property
+    def discount_amount(self):
+        if self.regular_price and self.regular_price > self.price:
+            return self.regular_price - self.price
+        return 0
+
+    @property
+    def discount_percent(self):
+        if self.regular_price and self.regular_price > self.price:
+            pct = ((self.regular_price - self.price) / self.regular_price) * 100
+            return int(round(pct))
+        return 0
 
 
 class ProductImage(TimeStampMixin):
@@ -261,5 +366,54 @@ class Review(TimeStampMixin):
 
     def __str__(self):
         return f"Review by {self.customer.name} on {self.product.name}"
+
+
+class FeaturedProduct(TimeStampMixin):
+    """
+    Curated products featured prominently on the homepage.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='featured_entries')
+    order = models.PositiveIntegerField(default=0, help_text="Display order on homepage (lower numbers appear first)")
+
+    class Meta:
+        ordering = ['order', '-created_at']
+        verbose_name = "Featured Product"
+        verbose_name_plural = "Featured Products"
+
+    def __str__(self):
+        return f"Featured: {self.product.name}"
+
+
+class NewProduct(TimeStampMixin):
+    """
+    Curated new arrivals and fresh products featured on the homepage.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='new_entries')
+    order = models.PositiveIntegerField(default=0, help_text="Display order on homepage (lower numbers appear first)")
+
+    class Meta:
+        ordering = ['order', '-created_at']
+        verbose_name = "New Product"
+        verbose_name_plural = "New Products"
+
+    def __str__(self):
+        return f"New Arrival: {self.product.name}"
+
+
+class OfferProduct(TimeStampMixin):
+    """
+    Curated hot deals and special offer products featured on the homepage.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='offer_entries')
+    order = models.PositiveIntegerField(default=0, help_text="Display order on homepage (lower numbers appear first)")
+
+    class Meta:
+        ordering = ['order', '-created_at']
+        verbose_name = "Offer Product"
+        verbose_name_plural = "Offer Products"
+
+    def __str__(self):
+        return f"Offer Deal: {self.product.name}"
+
 
 

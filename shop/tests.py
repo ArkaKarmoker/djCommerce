@@ -5,7 +5,8 @@ from decimal import Decimal
 
 from .models import (
     Category, Product, ProductVariant, ProductImage,
-    Customer, Address, Order, Payment, Review
+    Customer, Address, Order, Payment, Review,
+    FeaturedProduct, NewProduct, OfferProduct
 )
 from .cart import Cart
 from .forms import CheckoutForm, UserRegisterForm
@@ -29,8 +30,6 @@ class ModelTests(TestCase):
             category=self.category,
             name='Pixel 9 Pro',
             brand='Google',
-            price=Decimal('999.00'),
-            quantity=10,
             short_description='Tensor G4 powerhouse',
             description='Detailed specs here',
             is_featured=True
@@ -38,9 +37,9 @@ class ModelTests(TestCase):
         self.variant = ProductVariant.objects.create(
             product=self.product,
             name='Pixel 9 Pro (Hazel / 256GB)',
-            color='Hazel',
-            stock=5,
-            price_adjustment=Decimal('50.00')
+            price=Decimal('999.00'),
+            quantity=5,
+            is_default=True
         )
         self.address = Address.objects.create(
             address_line='House 10, Road 5, Banani',
@@ -65,7 +64,7 @@ class ModelTests(TestCase):
     def test_product_and_variant_creation(self):
         self.assertEqual(str(self.product), 'Pixel 9 Pro')
         self.assertTrue(self.product.in_stock)
-        self.assertEqual(self.variant.stock, 5)
+        self.assertEqual(self.variant.quantity, 5)
         self.assertIn('Hazel', str(self.variant))
 
     def test_address_and_customer_creation(self):
@@ -112,15 +111,20 @@ class CartTests(TestCase):
         self.product = Product.objects.create(
             category=self.category,
             name='iPhone 16',
-            price=Decimal('1000.00'),
-            quantity=10
         )
         self.variant = ProductVariant.objects.create(
             product=self.product,
             name='iPhone 16 (Black 256GB)',
-            color='Black',
-            stock=5,
-            price_adjustment=Decimal('100.00')
+            price=Decimal('1000.00'),
+            quantity=10,
+            is_default=True
+        )
+        self.variant2 = ProductVariant.objects.create(
+            product=self.product,
+            name='iPhone 16 (Black 512GB)',
+            price=Decimal('1100.00'),
+            quantity=5,
+            is_default=False
         )
         self.client = Client()
 
@@ -135,13 +139,13 @@ class CartTests(TestCase):
         req = DummyRequest(session)
         cart = Cart(req)
 
-        # Add product without variant
+        # Add product with default variant
         cart.add(self.product, quantity=1)
         self.assertEqual(len(cart), 1)
         self.assertEqual(cart.get_total_price(), Decimal('1000.00'))
 
-        # Add with variant ($1000 + $100 = $1100)
-        cart.add(self.product, quantity=2, variant=self.variant)
+        # Add with second variant ($1100)
+        cart.add(self.product, quantity=2, variant=self.variant2)
         self.assertEqual(len(cart), 3)
         self.assertEqual(cart.get_total_price(), Decimal('3200.00'))
 
@@ -157,8 +161,13 @@ class AuthAndDashboardTests(TestCase):
         self.product = Product.objects.create(
             category=self.category,
             name='Galaxy S25',
+        )
+        self.variant = ProductVariant.objects.create(
+            product=self.product,
+            name='Standard',
             price=Decimal('1200.00'),
-            quantity=10
+            quantity=10,
+            is_default=True
         )
 
     def test_user_registration(self):
@@ -205,11 +214,16 @@ class CheckoutAndFlowTests(TestCase):
             category=self.category,
             name='iPhone 16 Pro Max',
             brand='Apple',
-            price=Decimal('1199.00'),
-            quantity=10,
             short_description='Titanium powerhouse',
             description='Specs info',
             is_featured=True
+        )
+        self.variant = ProductVariant.objects.create(
+            product=self.product,
+            name='256GB - Natural Titanium',
+            price=Decimal('1199.00'),
+            quantity=10,
+            is_default=True
         )
 
     def test_home_and_product_list_views(self):
@@ -231,22 +245,102 @@ class CheckoutAndFlowTests(TestCase):
         # 2. Post checkout with COD
         checkout_url = reverse('shop:checkout')
         post_data = {
-            'name': 'Arka Karmoker',
-            'phone': '01712345678',
-            'address': 'House 12, Road 4, Banani, Dhaka',
-            'email': 'arka@example.com',
+            'street_address': 'House 12, Road 4, Banani',
+            'city': 'Dhaka',
+            'postal_code': '1213',
+            'country': 'Bangladesh',
             'payment_method': 'cod'
         }
         response = self.client.post(checkout_url, post_data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Order Placed Successfully!')
-        self.assertContains(response, 'Arka Karmoker')
 
         # Check DB
-        customer = Customer.objects.get(phone='01712345678')
-        order = Order.objects.get(customer=customer, product=self.product)
+        order = Order.objects.filter(product=self.product).first()
+        self.assertIsNotNone(order)
         self.assertEqual(order.total_price, Decimal('1199.00'))
         self.assertEqual(order.payment_method, 'Cash on Delivery')
         self.assertEqual(order.status, 'Pending')
+
+
+class VariantAndAdminTests(TestCase):
+    def setUp(self):
+        self.category = Category.objects.create(name='Gadgets', slug='gadgets')
+        self.product = Product.objects.create(
+            category=self.category,
+            name='Smart Watch Ultra',
+            slug='smart-watch-ultra'
+        )
+
+    def test_single_default_variant_enforcement(self):
+        var1 = ProductVariant.objects.create(
+            product=self.product,
+            name='Silver / 44mm',
+            price=Decimal('299.00'),
+            is_default=True
+        )
+        self.assertTrue(var1.is_default)
+        self.assertEqual(self.product.price, Decimal('299.00'))
+
+        # Create second variant as default
+        var2 = ProductVariant.objects.create(
+            product=self.product,
+            name='Black / 49mm',
+            price=Decimal('399.00'),
+            is_default=True
+        )
+        var1.refresh_from_db()
+        var2.refresh_from_db()
+        self.assertFalse(var1.is_default)
+        self.assertTrue(var2.is_default)
+        self.assertEqual(self.product.price, Decimal('399.00'))
+
+        # Switch default back to var1
+        var1.is_default = True
+        var1.save()
+        var1.refresh_from_db()
+        var2.refresh_from_db()
+        self.assertTrue(var1.is_default)
+        self.assertFalse(var2.is_default)
+
+    def test_product_admin_change_view(self):
+        admin_user = User.objects.create_superuser(username='adminuser', email='admin@example.com', password='AdminPassword123')
+        self.client.force_login(admin_user)
+        url = reverse('admin:shop_product_change', args=[self.product.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+
+class CuratedProductsTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.category = Category.objects.create(name='Electronics', slug='electronics')
+        self.prod_featured = Product.objects.create(category=self.category, name='Featured Watch')
+        ProductVariant.objects.create(product=self.prod_featured, name='Default', price=Decimal('250.00'), is_default=True)
+
+        self.prod_new = Product.objects.create(category=self.category, name='New Arrival Drone')
+        ProductVariant.objects.create(product=self.prod_new, name='Default', price=Decimal('500.00'), is_default=True)
+
+        self.prod_offer = Product.objects.create(category=self.category, name='Mega Discount Camera')
+        ProductVariant.objects.create(product=self.prod_offer, name='Default', price=Decimal('700.00'), regular_price=Decimal('1000.00'), is_default=True)
+
+    def test_curated_tables_appear_on_homepage(self):
+        # Create curated entries
+        FeaturedProduct.objects.create(product=self.prod_featured, order=1)
+        NewProduct.objects.create(product=self.prod_new, order=1)
+        OfferProduct.objects.create(product=self.prod_offer, order=1)
+
+        response = self.client.get(reverse('shop:home'))
+        self.assertEqual(response.status_code, 200)
+        
+        featured_list = response.context['featured_products']
+        new_list = response.context['new_products']
+        offer_list = response.context['best_offers']
+
+        self.assertIn(self.prod_featured, featured_list)
+        self.assertIn(self.prod_new, new_list)
+        self.assertIn(self.prod_offer, offer_list)
+
+
 
 

@@ -1,0 +1,16 @@
+/* Hide redundant inline model instance title in User admin */
+#customer_profile-group h3,
+#customer_set-group h3,
+#customer-group h3 {
+    display: none !important;
+}
+
+/* TinyMCE editor styling inside Django Admin */
+.tox-tinymce {
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+    max-width: 950px !important;
+}
+
+

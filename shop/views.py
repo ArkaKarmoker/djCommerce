@@ -12,7 +12,10 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import uuid
 import stripe
 
-from .models import Category, Product, ProductVariant, ProductImage, Customer, Address, Order, Payment, Review
+from .models import (
+    Category, Product, ProductVariant, ProductImage, Customer, Address, Order, Payment, Review,
+    FeaturedProduct, NewProduct, OfferProduct
+)
 from .cart import Cart
 from .forms import CheckoutForm, UserRegisterForm, CustomerProfileForm, AddressForm, ReviewForm, EmailLoginForm
 
@@ -29,10 +32,15 @@ def home_view(request):
     """
     categories = Category.objects.all()
     
-    # 1. Featured Products (Handpicked & Flagship)
-    featured_products = list(Product.objects.filter(is_featured=True).order_by('-price')[:4])
-    if not featured_products:
-        featured_products = list(Product.objects.all().order_by('-price')[:4])
+    # 1. Featured Products (Curated via FeaturedProduct table, fallback to flagged/latest)
+    featured_entries = FeaturedProduct.objects.select_related('product').prefetch_related('product__variants').all()
+    if featured_entries.exists():
+        featured_products = [entry.product for entry in featured_entries]
+    else:
+        featured_products = list(Product.objects.filter(is_featured=True).prefetch_related('variants').order_by('-created_at')[:4])
+        if not featured_products:
+            featured_products = list(Product.objects.all().prefetch_related('variants').order_by('-created_at')[:4])
+
     for p in featured_products:
         p._custom_badge = {
             'label': 'Featured',
@@ -40,8 +48,13 @@ def home_view(request):
             'css_class': 'featured',
         }
 
-    # 2. New Arrivals (Latest added products)
-    new_products = list(Product.objects.all().order_by('-created_at')[:4])
+    # 2. New Arrivals (Curated via NewProduct table, fallback to latest added)
+    new_entries = NewProduct.objects.select_related('product').prefetch_related('product__variants').all()
+    if new_entries.exists():
+        new_products = [entry.product for entry in new_entries]
+    else:
+        new_products = list(Product.objects.all().prefetch_related('variants').order_by('-created_at')[:4])
+
     for p in new_products:
         p._custom_badge = {
             'label': 'New',
@@ -49,12 +62,16 @@ def home_view(request):
             'css_class': 'new',
         }
 
-    # 3. Best Offers (Products with largest price cuts / discounts)
-    best_offers = list(Product.objects.filter(regular_price__gt=F('price')).annotate(
-        discount_diff=F('regular_price') - F('price')
-    ).order_by('-discount_diff')[:4])
-    if not best_offers:
-        best_offers = list(Product.objects.all().order_by('-price')[:4])
+    # 3. Best Offers (Curated via OfferProduct table, fallback to highest discounts)
+    offer_entries = OfferProduct.objects.select_related('product').prefetch_related('product__variants').all()
+    if offer_entries.exists():
+        best_offers = [entry.product for entry in offer_entries]
+    else:
+        discounted = list(Product.objects.filter(variants__regular_price__gt=F('variants__price')).distinct().prefetch_related('variants')[:4])
+        if not discounted:
+            discounted = list(Product.objects.all().prefetch_related('variants').order_by('-created_at')[:4])
+        best_offers = discounted
+
     for p in best_offers:
         p._custom_badge = {
             'label': 'Hot Deals',
@@ -63,7 +80,7 @@ def home_view(request):
         }
 
     # Visual assets for Hero Banner
-    apple_exclusive = Product.objects.filter(brand__iexact='Apple').order_by('-price')[:4]
+    apple_exclusive = Product.objects.filter(brand__iexact='Apple').prefetch_related('variants').order_by('-created_at')[:4]
     if not apple_exclusive.exists():
         apple_exclusive = featured_products[:4]
 
@@ -117,18 +134,20 @@ def product_list_view(request):
     # Price Range Filters
     min_price = request.GET.get('min_price', '').strip()
     if min_price and min_price.isdigit():
-        products = products.filter(price__gte=float(min_price))
+        products = products.filter(variants__price__gte=float(min_price)).distinct()
 
     max_price = request.GET.get('max_price', '').strip()
     if max_price and max_price.isdigit():
-        products = products.filter(price__lte=float(max_price))
+        products = products.filter(variants__price__lte=float(max_price)).distinct()
 
     # Availability Filter (in_stock, out_of_stock)
     availability_filter = request.GET.get('availability', '').strip()
     if availability_filter == 'in_stock':
-        products = products.filter(quantity__gt=0)
+        in_stock_ids = ProductVariant.objects.filter(quantity__gt=0, is_available=True).values_list('product_id', flat=True)
+        products = products.filter(id__in=in_stock_ids)
     elif availability_filter == 'out_of_stock':
-        products = products.filter(quantity=0)
+        in_stock_ids = ProductVariant.objects.filter(quantity__gt=0, is_available=True).values_list('product_id', flat=True)
+        products = products.exclude(id__in=in_stock_ids)
 
     # Search Query
     query = request.GET.get('q', '').strip()
@@ -142,24 +161,25 @@ def product_list_view(request):
 
     # Featured Products Filter
     if request.GET.get('featured') == '1' or request.GET.get('is_featured') == '1':
-        products = products.filter(is_featured=True)
+        if FeaturedProduct.objects.exists():
+            products = products.filter(Q(featured_entries__isnull=False) | Q(is_featured=True)).distinct()
+        else:
+            products = products.filter(is_featured=True)
 
     # Sorting
     sort = request.GET.get('sort', 'default')
     if sort == 'price_low':
-        products = products.order_by('price')
+        products = products.order_by('variants__price').distinct()
     elif sort == 'price_high':
-        products = products.order_by('-price')
+        products = products.order_by('-variants__price').distinct()
     elif sort == 'name':
         products = products.order_by('name')
     elif sort == 'newest':
         products = products.order_by('-created_at')
     elif sort == 'discount':
-        products = products.filter(regular_price__gt=F('price')).annotate(
-            discount_diff=F('regular_price') - F('price')
-        ).order_by('-discount_diff')
+        products = products.filter(variants__regular_price__gt=F('variants__price')).distinct()
     else: # default
-        products = products.order_by('-price')
+        products = products.order_by('-created_at')
 
     total_count = products.count()
 
@@ -240,7 +260,7 @@ def search_suggest_view(request):
             default=Value(4),
             output_field=IntegerField()
         )
-    ).order_by('match_rank', '-price')[:6]
+    ).order_by('match_rank', '-created_at')[:6]
 
     results = []
     for p in top_products:
@@ -255,7 +275,7 @@ def search_suggest_view(request):
             'discount_percent': p.discount_percent if p.discount_percent > 0 else None,
             'image_url': image_url,
             'detail_url': reverse('shop:product_detail', args=[p.id]),
-            'in_stock': p.quantity > 0,
+            'in_stock': p.in_stock,
         })
 
     return JsonResponse({
@@ -268,7 +288,7 @@ def search_suggest_view(request):
 def product_detail_view(request, pk):
     """
     Product details page:
-    Color swatch pills with colored dots, region selector pills, storage selector pills,
+    Dynamic variant selector pills with pricing, regular price, stock updates,
     dual CTA buttons ("Shop Now" + "Add To Cart"), WhatsApp contact, EMI plans,
     2-column comprehensive specifications table, and "Recently Viewed" sidebar.
     """
@@ -277,7 +297,7 @@ def product_detail_view(request, pk):
     # ── Smart Contextual Related Products (Industry Best Practice) ──
     TARGET_RELATED = 4
     related_ids = []
-    base_qs = Product.objects.exclude(id=product.id)
+    base_qs = Product.objects.exclude(id=product.id).prefetch_related('variants')
 
     # Level 1: Same Subcategory + Same Brand (Exact Match)
     if product.brand and product.category:
@@ -296,9 +316,9 @@ def product_detail_view(request, pk):
         needed = TARGET_RELATED - len(related_ids)
         l2_ids = list(base_qs.exclude(id__in=related_ids).filter(
             category=product.category,
-            price__gte=min_p,
-            price__lte=max_p
-        ).order_by('-is_featured', '-created_at').values_list('id', flat=True)[:needed])
+            variants__price__gte=min_p,
+            variants__price__lte=max_p
+        ).distinct().order_by('-is_featured', '-created_at').values_list('id', flat=True)[:needed])
         for pid in l2_ids:
             if pid not in related_ids:
                 related_ids.append(pid)
@@ -363,83 +383,10 @@ def product_detail_view(request, pk):
             p._custom_badge = None
 
     gallery_images = product.images.all()
-    variants = product.variants.all()
+    variants = product.variants.all().order_by('-is_default', 'name')
+    default_variant = product.default_variant
     reviews = product.reviews.all()
     review_form = ReviewForm()
-
-
-
-    # Color definitions and options
-    color_map = {
-        'cosmic orange': '#e05915',
-        'deep blue': '#1e293b',
-        'silver': '#e2e8f0',
-        'natural titanium': '#9f9587',
-        'black titanium': '#202022',
-        'white titanium': '#f7f7f7',
-        'desert titanium': '#c8ab8f',
-        'space black': '#171717',
-        'midnight': '#191c24',
-        'starlight': '#faf7f2',
-        'blue': '#2563eb',
-        'green': '#10b981',
-        'gold': '#f59e0b',
-        'pink': '#ec4899',
-        'purple': '#8b5cf6',
-        'yellow': '#eab308',
-        'red': '#ef4444',
-        'phantom black': '#18181b',
-        'titanium gray': '#64748b',
-    }
-
-    # Extract distinct colors and storage
-    variant_colors = []
-    seen_colors = set()
-    for v in variants:
-        c_clean = v.color.strip()
-        if c_clean and c_clean.lower() not in seen_colors:
-            seen_colors.add(c_clean.lower())
-            hex_code = color_map.get(c_clean.lower(), '#94a3b8')
-            variant_colors.append({'name': c_clean, 'hex': hex_code, 'id': v.id})
-
-    # Default color list if none defined
-    if not variant_colors:
-        if 'apple' in (product.brand or '').lower() or 'iphone' in product.name.lower():
-            variant_colors = [
-                {'name': 'Cosmic Orange', 'hex': '#e05915', 'id': 'opt1'},
-                {'name': 'Deep Blue', 'hex': '#1e293b', 'id': 'opt2'},
-                {'name': 'Silver', 'hex': '#e2e8f0', 'id': 'opt3'},
-            ]
-        else:
-            variant_colors = [
-                {'name': 'Black', 'hex': '#202022', 'id': 'opt1'},
-                {'name': 'Silver', 'hex': '#e2e8f0', 'id': 'opt2'},
-            ]
-
-    # Regions
-    regions = [
-        {'name': 'E-Sim JP', 'label': 'E-Sim JP'},
-        {'name': 'E-Sim USA', 'label': 'E-Sim USA'},
-        {'name': 'SIM+eSim AUS', 'label': 'SIM+eSim AUS'},
-        {'name': 'Physical Dual SIM', 'label': 'Physical Dual SIM'},
-    ]
-
-    # Storage options
-    storages = ['128GB', '256GB', '512GB', '1TB']
-
-    # Structured Specifications Table
-    specs_list = [
-        ('Brand', product.brand or 'Official Brand'),
-        ('Model', product.name),
-        ('Network', '5G (Sub-6GHz), 4G LTE, 3G HSPA, 2G GSM, Dual SIM Support'),
-        ('Display', 'Super Retina XDR OLED / Dynamic AMOLED 2X, 120Hz Refresh Rate, HDR10+, Up to 2600 nits peak brightness'),
-        ('Chipset', 'Next-Gen Flagship Processor (3nm Bionic / Snapdragon 8 Elite), Octa-Core Ultra-Fast GPU'),
-        ('Camera', '48 MP Fusion Main (Sensor-Shift OIS) + 12 MP Ultra Wide + 12 MP Telephoto (5x Optical Zoom)'),
-        ('Battery', '4500-5000 mAh Li-Ion, 25W-65W Fast Wired Charging, MagSafe / Qi2 Wireless Fast Charging'),
-        ('Operating System', 'iOS 18 / Android 15 with guaranteed multi-year software updates'),
-        ('Warranty', '1 Year Official Brand Service Warranty (Hardware + Software)'),
-        ('In The Box', 'Device Handset, USB Type-C to C Braided Cable, SIM Eject Tool, Documentation Guide'),
-    ]
 
     # SKU / Product Code
     sku_code = f"AGL{product.id + 30400}"
@@ -449,13 +396,11 @@ def product_detail_view(request, pk):
         'related_products': related_products,
         'gallery_images': gallery_images,
         'variants': variants,
-        'variant_colors': variant_colors,
-        'regions': regions,
-        'storages': storages,
-        'specs_list': specs_list,
+        'default_variant': default_variant,
         'sku_code': sku_code,
         'reviews': reviews,
         'review_form': review_form,
+        'specs_list': [],  # specs now come from product.description (rich text)
     }
     return render(request, 'shop/product_detail.html', context)
 
@@ -509,10 +454,41 @@ def cart_add_view(request, product_id):
     if quantity <= 0:
         quantity = 1
 
-    variant_id = request.POST.get('variant_id')
+    variant_input = request.POST.get('variant_id') or request.POST.get('variant')
     variant = None
-    if variant_id:
-        variant = ProductVariant.objects.filter(id=variant_id, product=product).first()
+    if variant_input:
+        if str(variant_input).isdigit():
+            variant = ProductVariant.objects.filter(id=int(variant_input), product=product).first()
+        if not variant:
+            variant = ProductVariant.objects.filter(name=variant_input, product=product).first()
+    if not variant:
+        variant = product.default_variant
+
+    # Check stock availability
+    is_in_stock = False
+    if variant:
+        is_in_stock = bool(variant.is_available and variant.quantity > 0)
+    else:
+        is_in_stock = bool(product.in_stock)
+
+    if not is_in_stock:
+        out_of_stock_msg = "Product is not available. Contact us for pre order."
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'out_of_stock': True,
+                'message': out_of_stock_msg,
+                'cart_count': len(cart),
+                'cart_total': str(cart.get_total_price()),
+                'contact_url': '/#contact',
+            })
+
+        messages.warning(request, out_of_stock_msg)
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('shop:product_detail', pk=product.pk)
 
     cart.add(product=product, quantity=quantity, variant=variant)
     item_title = f"{product.name} ({variant.name})" if variant else product.name
@@ -724,16 +700,11 @@ def checkout_view(request):
 
                 # Deduct stock
                 if variant:
-                    if variant.stock >= quantity:
-                        variant.stock -= quantity
+                    if variant.quantity >= quantity:
+                        variant.quantity -= quantity
                     else:
-                        variant.stock = 0
+                        variant.quantity = 0
                     variant.save()
-                if product.quantity >= quantity:
-                    product.quantity -= quantity
-                else:
-                    product.quantity = 0
-                product.save()
 
             # Handle Payment Strategy
             if payment_method == 'stripe':

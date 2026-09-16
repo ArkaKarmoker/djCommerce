@@ -1,4 +1,4 @@
-# djCommerce — Premium Gadgets & Mobile E-Commerce Web Application
+# djCommerce — Mobile & Gadgets E-Commerce Web Application
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12.10-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">

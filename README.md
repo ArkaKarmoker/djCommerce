@@ -323,6 +323,13 @@ Category with Subcategories:
 Realtime Product Search:
 <img width="1765" height="772" alt="image" src="https://github.com/user-attachments/assets/a619389e-46a6-4167-a35c-bed51e57be58" />
 
+Django Admin Panel:
+<img width="1763" height="955" alt="image" src="https://github.com/user-attachments/assets/c328fcc4-9469-4e1f-bb87-45da903fee94" />
+
+Admin Panel User Management:
+<img width="1763" height="955" alt="image" src="https://github.com/user-attachments/assets/d5e5f3b0-2c9e-422c-ab15-d8c856f88e91" />
+
+
 ---
 
 Developed for educational purposes. All product brand names belong to their respective trademark holders.
